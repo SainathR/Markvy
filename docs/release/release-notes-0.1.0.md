@@ -15,7 +15,7 @@ Markvy opens Markdown documents and wiki folders on your computer and shows them
 - Search across the folder you opened.
 - Bookmarks, and your tabs come back when you reopen Markvy.
 - Reading preferences: text size, themes and fonts (Literata, Figtree and Lexend).
-- Diagrams (Mermaid), formulas (KaTeX), tables, footnotes and wiki-style links between pages.
+- Diagrams (Mermaid), formulas (KaTeX), tables, callouts and wiki-style links between pages.
 - Broken links are marked, and you are told what is wrong.
 
 **Editing**
