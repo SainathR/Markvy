@@ -13,6 +13,7 @@ A calm, private desktop app for Markdown documents and wiki folders, made for pe
 ![Offline](https://img.shields.io/badge/works-offline-2f6b55?style=flat-square)
 ![No tracking](https://img.shields.io/badge/analytics-none-2f6b55?style=flat-square)
 ![Built with Tauri](https://img.shields.io/badge/built%20with-Tauri%202-24c8db?style=flat-square)
+[![License: MIT](https://img.shields.io/badge/license-MIT-4a5568?style=flat-square)](LICENSE)
 
 [Download](#download) · [Features](#features) · [Privacy](#privacy) · [Shortcuts](#keyboard-shortcuts) · [Build from source](#build-from-source)
 
@@ -213,6 +214,6 @@ release/            Built installers
 
 Made by **Sainath Racherla**
 
-<sub>Markvy is a personal project. Questions, ideas or bugs? <a href="https://github.com/SainathR/Markvy/issues">Open an issue</a>.</sub>
+<sub>Markvy is a personal project, released under the <a href="LICENSE">MIT License</a>. Questions, ideas or bugs? <a href="https://github.com/SainathR/Markvy/issues">Open an issue</a>.</sub>
 
 </div>
