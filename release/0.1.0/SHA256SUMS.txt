@@ -1,0 +1,2 @@
+99a42efb5d071e7e0fa87f07ec8d79c04fbba0f53c0a0198c9df4e25225da097 *Markvy_0.1.0_x64_en-US.msi
+860af344d82ee8b10e7ad9bb1624d85375f1d349abbcdacfb3360d86f156935d *Markvy_0.1.0_x64-setup.exe
