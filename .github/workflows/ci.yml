@@ -1,0 +1,85 @@
+name: CI
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-24.04]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    env:
+      CI: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: app/src-tauri
+      - name: Linux system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf webkit2gtk-driver xvfb
+      - run: npm ci
+      - name: Read-only, network and dependency checks
+        run: npm run check:readonly && npm run check:deps
+      - run: npm run check
+      - run: npm test
+      - run: cargo test --manifest-path src-tauri/Cargo.toml
+      - name: No file writes outside library.rs and log.rs
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -A clippy::all -D clippy::disallowed_methods
+      - name: No file writes in the whole-app test build either (feature-gated code)
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --features e2e -- -A clippy::all -D clippy::disallowed_methods
+      - name: Unit tests of the whole-app test hooks (e2e)
+        run: |
+          cargo test --manifest-path src-tauri/Cargo.toml --features e2e e2e::
+      - name: Speed checks (search 5,000 documents under 200 ms, 1,000-file tree under 2 s)
+        run: cargo test --release --manifest-path src-tauri/Cargo.toml speed -- --ignored --nocapture
+      - name: Screens in WebKit and Chromium, with axe-core
+        run: |
+          npx playwright install --with-deps webkit chromium
+          npm run test:web
+      - name: Build (macOS, no whole-app tests there)
+        if: runner.os == 'macOS'
+        run: npm run tauri build -- --no-bundle
+      - name: Whole-app test tools (e2e)
+        if: runner.os != 'macOS'
+        run: |
+          cargo install tauri-driver --locked
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            cargo install --git https://github.com/chippers/msedgedriver-tool --locked
+            mkdir -p e2e/.driver && (cd e2e/.driver && msedgedriver-tool)
+          fi
+      - name: Whole-app tests, start-up and tree speed (e2e)
+        if: runner.os != 'macOS'
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            MARKVY_NATIVE_DRIVER=$(command -v WebKitWebDriver) xvfb-run -a npm run test:e2e
+          else
+            npm run test:e2e
+          fi
+      - name: Start-up speed without WebDriver (median of 3 under 1.5 s)
+        if: runner.os != 'macOS'
+        run: |
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            xvfb-run -a npm run bench:startup
+          else
+            npm run bench:startup
+          fi

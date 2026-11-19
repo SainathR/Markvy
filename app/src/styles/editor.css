@@ -1,0 +1,43 @@
+/* Editing: the editor takes the reader's scroller and status bar rows. */
+.pane > .editor { grid-row: 5 / 7; min-height: 0; display: flex; flex-direction: column; background: var(--page); }
+.ed-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; padding: .3rem .5rem; background: var(--page); border-bottom: 1px solid var(--line); }
+.ed-toolbar .icon-btn { font-weight: 600; font-size: .8125rem; }
+.ed-toolbar .sep { width: 1px; height: 20px; margin: 0 6px; background: var(--line); }
+.ed-toolbar .draft-dot { margin-left: auto; }
+.ed-toolbar .draft-dot + .ed-status { margin-left: 6px; }
+.ed-status { margin-left: auto; margin-right: 8px; font-size: .8125rem; color: var(--ink-3); }
+.ed-toolbar .btn + .btn { margin-left: 4px; }
+.ed-reopen { margin-right: 8px; font-size: .8125rem; }
+.ed-error { margin: 8px 12px 0; padding: 8px 12px; border-radius: 6px; background: var(--danger-soft); color: var(--danger); }
+.ed-host { flex: 1; min-height: 0; overflow: auto; padding: 2.25rem clamp(1rem, 4vw, 3rem) 6rem; }
+
+/* ProseMirror needs these to place the caret and keep spaces. */
+.ed-surface { min-height: 50vh; outline: none; white-space: pre-wrap; word-wrap: break-word; font-variant-ligatures: none; }
+.ed-surface .ProseMirror-selectednode { outline: 2px solid var(--focus); outline-offset: 2px; }
+.ed-surface.ProseMirror-hideselection *::selection { background: transparent; }
+.ed-surface li[data-item-type="task"] { list-style: none; }
+.ed-surface li[data-item-type="task"]::before { content: "☐"; margin: 0 .4em 0 -1.3em; }
+.ed-surface li[data-item-type="task"][data-checked="true"]::before { content: "☑"; }
+.ed-surface img { max-width: 100%; }
+
+.ed-card { position: relative; margin: 1em 0; padding: 12px 12px 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); white-space: normal; }
+.ed-card > .btn { position: absolute; top: 6px; right: 6px; }
+.ed-card > .doc { max-width: none; font-size: inherit; }
+.ed-card > pre { margin: 0; font-family: var(--font-mono); font-size: .85em; white-space: pre-wrap; }
+.ed-wiki { padding: 0 6px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); white-space: nowrap; }
+.ed-math { font-family: var(--font-mono); font-size: .9em; }
+.ed-remote-img { display: inline-block; padding: 2px 8px; border: 1px dashed var(--line); border-radius: 6px; color: var(--ink-3); font-family: var(--font-ui); font-size: .85em; }
+
+.draft-dot { display: inline-block; flex: none; width: 8px; height: 8px; margin-left: 4px; border-radius: 50%; background: var(--accent); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.banner { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; max-width: var(--read-width); margin: 0 auto 1.5rem; padding: .6rem .9rem; border-radius: 8px; background: var(--accent-soft); color: var(--ink); font-size: .9rem; }
+.banner > span { flex: 1 1 16rem; }
+
+.clash { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0; }
+.clash h3 { margin: 0 0 4px; font-size: .85rem; color: var(--ink-2); }
+.clash pre { max-height: 40vh; margin: 0; padding: 8px; overflow: auto; white-space: pre-wrap; background: var(--code-bg); border-radius: 6px; font-size: .8125rem; }
+@media (max-width: 720px) { .clash { grid-template-columns: 1fr; } }
+.ed-source-label { display: block; margin-bottom: 4px; font-size: .85rem; color: var(--ink-2); }
+.ed-source { width: 100%; box-sizing: border-box; font-family: var(--font-mono); font-size: .875rem; }
+.ed-field { display: grid; gap: 4px; }
+.page-pick { max-height: 40vh; overflow: auto; margin: .75rem 0 0; padding: 0; list-style: none; display: grid; gap: 4px; }

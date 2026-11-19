@@ -1,0 +1,2720 @@
+<title>Folio Reader Prototype</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Lexend:wght@400;600&display=swap">
+<style>
+/* Layout: a desktop window on a desk — prototype strip, app bar, then three panels: library tree | reading page | contents */
+:root {
+  --desk: #E3E6DE; --paper: #F7F8F4; --page: #FFFFFF; --panel: #EEF0EA; --hover: #E4E7DF; --line: #D8DBD2;
+  --ink: #1C211E; --ink-2: #4A524C; --ink-3: #646C66;
+  --accent: #2E6A54; --accent-ink: #FFFFFF; --accent-soft: #DFEBE4;
+  --mark: #FBE49A; --mark-ink: #1C211E;
+  --info: #2B5C8A; --info-soft: #E1EBF4; --tip: #2E6A54; --tip-soft: #DFEBE4;
+  --imp: #5E4A96; --imp-soft: #ECE7F6; --warn: #8A5300; --warn-soft: #FAEFD9;
+  --danger: #A3352A; --danger-soft: #F8E3E0; --danger-ink: #FFFFFF;
+  --code-bg: #F0F2EC; --focus: #1B5FD0; --strip: #1C211E; --strip-ink: #E9ECE6;
+  --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Literata", Georgia, "Times New Roman", serif;
+  --font-sans: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-easy: "Lexend", Verdana, Tahoma, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  --read-font: var(--font-serif); --read-size: 1.125rem; --read-width: 68ch; --read-lh: 1.7;
+  --shadow: 0 1px 2px rgb(20 30 25 / .06), 0 8px 28px rgb(20 30 25 / .08);
+  --speed: 160ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #0B0D0C; --paper: #141815; --page: #181C19; --panel: #1C211E; --hover: #252C27; --line: #2D352F;
+    --ink: #E3E7E2; --ink-2: #B4BCB5; --ink-3: #8F9890;
+    --accent: #7BC3A5; --accent-ink: #0D1A14; --accent-soft: #1E392E;
+    --mark: #6A5A14; --mark-ink: #FFF7D9;
+    --info: #8DB9E6; --info-soft: #1A2938; --tip: #7BC3A5; --tip-soft: #1E392E;
+    --imp: #B9A6EE; --imp-soft: #2A2340; --warn: #E9B65C; --warn-soft: #2D2413;
+    --danger: #F08C80; --danger-soft: #3A1E1B; --danger-ink: #1A0B09;
+    --code-bg: #1F2521; --focus: #8AB4FF; --strip: #E3E7E2; --strip-ink: #141815;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #0B0D0C; --paper: #141815; --page: #181C19; --panel: #1C211E; --hover: #252C27; --line: #2D352F;
+  --ink: #E3E7E2; --ink-2: #B4BCB5; --ink-3: #8F9890;
+  --accent: #7BC3A5; --accent-ink: #0D1A14; --accent-soft: #1E392E;
+  --mark: #6A5A14; --mark-ink: #FFF7D9;
+  --info: #8DB9E6; --info-soft: #1A2938; --tip: #7BC3A5; --tip-soft: #1E392E;
+  --imp: #B9A6EE; --imp-soft: #2A2340; --warn: #E9B65C; --warn-soft: #2D2413;
+  --danger: #F08C80; --danger-soft: #3A1E1B; --danger-ink: #1A0B09;
+  --code-bg: #1F2521; --focus: #8AB4FF; --strip: #E3E7E2; --strip-ink: #141815;
+  color-scheme: dark;
+}
+/* Colour themes: each sits on the light or dark base (data-theme) and swaps neutrals + accent */
+:root[data-palette="sepia"] {
+  --desk: #E2D7C3; --paper: #F4ECDD; --page: #FBF5E9; --panel: #EDE3D0; --hover: #E5D9C3; --line: #D8CBB2;
+  --ink: #3B2F22; --ink-2: #5E4F3D; --ink-3: #6F5E49; --accent: #8A4B22; --accent-ink: #FFF8EE; --accent-soft: #F0DCC8;
+  --tip: #8A4B22; --tip-soft: #F0DCC8; --code-bg: #EFE5D3; --strip: #3B2F22; --strip-ink: #F4ECDD;
+}
+:root[data-palette="slate"] {
+  --desk: #DCE2EA; --paper: #F4F6F9; --page: #FFFFFF; --panel: #EBEFF4; --hover: #E1E7EE; --line: #D3DAE3;
+  --ink: #1A2230; --ink-2: #465163; --ink-3: #5B6779; --accent: #2457A6; --accent-ink: #FFFFFF; --accent-soft: #DDE8F7;
+  --tip: #2457A6; --tip-soft: #DDE8F7; --code-bg: #EEF2F7; --strip: #1A2230; --strip-ink: #E8EDF3;
+}
+:root[data-palette="rose"] {
+  --desk: #E9DEDF; --paper: #FAF5F5; --page: #FFFFFF; --panel: #F3EAEB; --hover: #EDE1E2; --line: #E0D2D4;
+  --ink: #2A1F22; --ink-2: #57474B; --ink-3: #6C5A5F; --accent: #9C3554; --accent-ink: #FFFFFF; --accent-soft: #F5DDE4;
+  --tip: #9C3554; --tip-soft: #F5DDE4; --code-bg: #F5EEEF; --strip: #2A1F22; --strip-ink: #F5ECEE;
+}
+:root[data-palette="dusk"] {
+  --desk: #0A0E16; --paper: #121826; --page: #161D2D; --panel: #1A2234; --hover: #232D42; --line: #2A3550;
+  --ink: #E2E7F0; --ink-2: #B3BDCF; --ink-3: #8D98AD; --accent: #8FB4FF; --accent-ink: #0B1426; --accent-soft: #1E2D4F;
+  --tip: #8FB4FF; --tip-soft: #1E2D4F; --code-bg: #1C2438; --strip: #E2E7F0; --strip-ink: #121826;
+}
+:root[data-palette="ember"] {
+  --desk: #0D0B09; --paper: #171411; --page: #1C1815; --panel: #211C18; --hover: #2B2520; --line: #362E27;
+  --ink: #ECE4DA; --ink-2: #C2B6A8; --ink-3: #9A8E80; --accent: #E8A75A; --accent-ink: #1C1206; --accent-soft: #3A2A17;
+  --tip: #E8A75A; --tip-soft: #3A2A17; --code-bg: #241F1A; --strip: #ECE4DA; --strip-ink: #171411;
+}
+/* High contrast: pure black on white (or the reverse), strong lines, no tinted surfaces */
+:root[data-contrast="high"] {
+  --desk: #FFFFFF; --paper: #FFFFFF; --page: #FFFFFF; --panel: #FFFFFF; --hover: #E8E8E8; --line: #000000;
+  --ink: #000000; --ink-2: #000000; --ink-3: #1A1A1A; --accent: #00408F; --accent-ink: #FFFFFF; --accent-soft: #D6E4FF;
+  --mark: #FFE500; --mark-ink: #000000; --code-bg: #F2F2F2; --focus: #C2002F;
+  --info: #00408F; --info-soft: #FFFFFF; --tip: #005A2B; --tip-soft: #FFFFFF; --imp: #4B0082; --imp-soft: #FFFFFF;
+  --warn: #6B3D00; --warn-soft: #FFFFFF; --danger: #A00000; --danger-soft: #FFFFFF; --strip: #000000; --strip-ink: #FFFFFF;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-contrast="high"]:not([data-theme="light"]) {
+    --desk: #000000; --paper: #000000; --page: #000000; --panel: #000000; --hover: #262626; --line: #FFFFFF;
+    --ink: #FFFFFF; --ink-2: #FFFFFF; --ink-3: #EDEDED; --accent: #FFD60A; --accent-ink: #000000; --accent-soft: #3A3000;
+    --mark: #FFD60A; --mark-ink: #000000; --code-bg: #121212; --focus: #5CE1FF;
+    --info: #9CD3FF; --info-soft: #000000; --tip: #8BF0B5; --tip-soft: #000000; --imp: #D9C2FF; --imp-soft: #000000;
+    --warn: #FFC861; --warn-soft: #000000; --danger: #FF8A80; --danger-soft: #000000; --strip: #FFFFFF; --strip-ink: #000000;
+  }
+}
+:root[data-theme="dark"][data-contrast="high"] {
+  --desk: #000000; --paper: #000000; --page: #000000; --panel: #000000; --hover: #262626; --line: #FFFFFF;
+  --ink: #FFFFFF; --ink-2: #FFFFFF; --ink-3: #EDEDED; --accent: #FFD60A; --accent-ink: #000000; --accent-soft: #3A3000;
+  --mark: #FFD60A; --mark-ink: #000000; --code-bg: #121212; --focus: #5CE1FF;
+  --info: #9CD3FF; --info-soft: #000000; --tip: #8BF0B5; --tip-soft: #000000; --imp: #D9C2FF; --imp-soft: #000000;
+  --warn: #FFC861; --warn-soft: #000000; --danger: #FF8A80; --danger-soft: #000000; --strip: #FFFFFF; --strip-ink: #000000;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.grow { flex: 1; }
+html { height: 100%; box-sizing: border-box; }
+body {
+  height: 100%; margin: 0; overflow: hidden;
+  background: var(--desk); color: var(--ink);
+  font: 400 0.9375rem/1.45 var(--font-ui);
+  padding-block: 12px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; } }
+:root[data-motion="reduce"] *, :root[data-motion="reduce"] *::before, :root[data-motion="reduce"] *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: default; opacity: .4; }
+.vh { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.i { width: 1.125rem; height: 1.125rem; flex: none; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; vertical-align: -0.2em; }
+.i.big { width: 2.5rem; height: 2.5rem; stroke-width: 1.25; color: var(--ink-3); }
+.muted { color: var(--ink-3); }
+.small { font-size: .8125rem; }
+.skip { position: absolute; left: 24px; top: -60px; z-index: 100; background: var(--page); color: var(--accent); padding: .5rem .75rem; border-radius: 6px; }
+.skip:focus { top: 20px; }
+
+/* ---------- App frame ---------- */
+.app { height: 100%; display: grid; grid-template-rows: auto auto minmax(0, 1fr); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.proto-strip { display: flex; align-items: center; gap: .75rem; padding: .3rem .75rem; background: var(--strip); color: var(--strip-ink); font-size: .8125rem; overflow-x: auto; white-space: nowrap; scrollbar-width: none; }
+.proto-tag { font-weight: 700; letter-spacing: .08em; text-transform: uppercase; font-size: .6875rem; border: 1px solid currentColor; border-radius: 4px; padding: .05rem .35rem; }
+.proto-note-s { opacity: .8; }
+.proto-strip nav { display: flex; gap: .125rem; margin-left: auto; }
+.proto-strip nav button { background: none; border: 0; padding: .25rem .5rem; border-radius: 5px; color: inherit; opacity: .78; }
+.proto-strip nav button:hover { opacity: 1; background: rgb(127 127 127 / .2); }
+.proto-strip nav button[aria-current] { opacity: 1; font-weight: 600; text-decoration: underline; text-underline-offset: .3em; }
+.proto-strip nav .num { opacity: .6; margin-right: .2rem; font-variant-numeric: tabular-nums; }
+
+.appbar { display: flex; align-items: center; gap: .5rem; padding: .45rem .75rem; border-bottom: 1px solid var(--line); background: var(--paper); position: relative; z-index: 30; }
+.brand { display: flex; align-items: center; gap: .45rem; background: none; border: 0; padding: .2rem .35rem; border-radius: 6px; color: var(--ink); }
+.brand .i { width: 1.4rem; height: 1.4rem; color: var(--accent); }
+.brand-name { font-family: var(--font-serif); font-weight: 600; font-size: 1.15rem; letter-spacing: .01em; }
+.ws-select { display: flex; align-items: center; gap: .35rem; color: var(--ink-3); font-size: .8125rem; }
+select { background: var(--page); border: 1px solid var(--line); border-radius: 7px; padding: .3rem .5rem; color: var(--ink); }
+.search-wrap { position: relative; flex: 1; max-width: 34rem; min-width: 0; margin-inline: auto; }
+.search-wrap > .i { position: absolute; left: .65rem; top: 50%; transform: translateY(-50%); color: var(--ink-3); pointer-events: none; }
+.search-wrap input { width: 100%; height: 2.25rem; padding: 0 2.6rem 0 2.1rem; border: 1px solid var(--line); border-radius: 8px; background: var(--page); color: var(--ink); }
+.search-wrap input::placeholder { color: var(--ink-3); }
+.kbd-hint { position: absolute; right: .55rem; top: 50%; transform: translateY(-50%); font-size: .75rem; color: var(--ink-3); border: 1px solid var(--line); border-radius: 4px; padding: 0 .35rem; pointer-events: none; }
+kbd { font-family: var(--font-ui); font-size: .85em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 0 .3em; background: var(--page); }
+.bar-group { display: flex; align-items: center; gap: .125rem; }
+.icon-btn { display: inline-grid; place-items: center; width: 2.25rem; height: 2.25rem; border: 0; border-radius: 8px; background: none; color: var(--ink-2); }
+.icon-btn:hover:not(:disabled) { background: var(--hover); color: var(--ink); }
+.icon-btn[aria-pressed="true"], .icon-btn[aria-expanded="true"].toggle { color: var(--accent); background: var(--accent-soft); }
+.icon-btn.sm { width: 2rem; height: 2rem; }
+.icon-btn[aria-pressed="true"] .i { fill: currentColor; fill-opacity: .18; }
+.btn { display: inline-flex; align-items: center; gap: .4rem; padding: .5rem .9rem; border-radius: 8px; border: 1px solid var(--line); background: var(--page); color: var(--ink); font-weight: 500; text-decoration: none; line-height: 1.2; }
+.btn:hover { background: var(--hover); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+.btn-danger { background: var(--danger); border-color: var(--danger); color: var(--danger-ink); }
+.btn-danger:hover { background: var(--danger); filter: brightness(1.08); }
+.btn.sm { padding: .3rem .6rem; font-size: .8125rem; }
+.link-btn { background: none; border: 0; padding: 0; color: var(--accent); text-decoration: underline; text-underline-offset: .18em; text-align: left; }
+.badge { display: inline-block; font-size: .6875rem; font-weight: 600; letter-spacing: .02em; padding: .05rem .4rem; border-radius: 99px; background: var(--hover); color: var(--ink-2); vertical-align: .1em; white-space: nowrap; }
+.badge.accent { background: var(--accent-soft); color: var(--accent); }
+.badge.warn { background: var(--warn-soft); color: var(--warn); }
+
+/* Popovers & suggestion list */
+.popover { position: absolute; top: calc(100% + 6px); right: 0; z-index: 40; width: 17rem; background: var(--page); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); padding: .9rem; display: grid; gap: .75rem; }
+.popover h2 { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin: 0; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button, .seg label { flex: 1; display: flex; align-items: center; justify-content: center; gap: .3rem; border: 0; background: none; padding: .4rem .3rem; font-size: .8125rem; cursor: pointer; }
+.seg > * + * { border-left: 1px solid var(--line) !important; }
+.seg button[aria-pressed="true"], .seg label:has(input:checked) { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--focus); outline-offset: -2px; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(4.6rem, 1fr)); gap: .5rem; }
+.swatch { display: grid; gap: .3rem; justify-items: start; background: none; border: 0; padding: 0; cursor: pointer; font-size: .75rem; color: var(--ink-2); text-align: left; position: relative; }
+.swatch input { position: absolute; opacity: 0; pointer-events: none; }
+.sw-chip { position: relative; width: 100%; height: 2.6rem; border-radius: 7px; border: 1px solid var(--line); background: var(--b); overflow: hidden; }
+.sw-chip::before { content: ""; position: absolute; left: .45rem; right: 1.4rem; top: .6rem; height: .9rem; background: linear-gradient(var(--c) 0 2px, transparent 2px 6px, var(--c) 6px 8px, transparent 8px 12px, var(--c) 12px 14px, transparent 14px); opacity: .75; }
+.sw-chip::after { content: ""; position: absolute; right: .45rem; bottom: .45rem; width: .6rem; height: .6rem; border-radius: 50%; background: var(--a); }
+.swatch[aria-pressed="true"] .sw-chip, .swatch:has(input:checked) .sw-chip { outline: 2px solid var(--accent); outline-offset: 2px; }
+.swatch[aria-pressed="true"], .swatch:has(input:checked) { color: var(--ink); font-weight: 600; }
+.swatch:has(input:focus-visible) .sw-chip { outline: 2px solid var(--focus); outline-offset: 2px; }
+.size-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
+.size-row output { font-variant-numeric: tabular-nums; font-size: .875rem; }
+.suggest { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 40; list-style: none; margin: 0; padding: .3rem; background: var(--page); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow); }
+.suggest li { display: flex; align-items: center; gap: .55rem; padding: .45rem .55rem; border-radius: 6px; cursor: pointer; }
+.suggest li[aria-selected="true"] { background: var(--accent-soft); }
+.suggest .s-main { display: grid; min-width: 0; }
+.suggest .s-sub { font-size: .75rem; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest .i { color: var(--ink-3); }
+
+/* ---------- Workspace grid ---------- */
+.workspace { position: relative; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; min-height: 0; }
+.sidebar { grid-column: 1; width: 17rem; min-height: 0; overflow-y: auto; background: var(--panel); border-right: 1px solid var(--line); padding: .75rem .6rem 1.5rem; display: flex; flex-direction: column; gap: .9rem; }
+main { grid-column: 2; min-width: 0; min-height: 0; display: grid; outline: none; }
+.toc { grid-column: 3; width: 15.5rem; min-height: 0; overflow-y: auto; background: var(--paper); border-left: 1px solid var(--line); padding: .9rem .75rem 1.5rem; }
+.workspace[data-sidebar="closed"] .sidebar, .workspace[data-view="home"] .sidebar { display: none; }
+.workspace[data-toc="closed"] .toc, .workspace:not([data-view="reader"]) .toc { display: none; }
+.view { min-height: 0; overflow-y: auto; }
+#view-reader { overflow: hidden; }
+
+/* Sidebar */
+.side-h { display: flex; align-items: center; justify-content: space-between; font-size: .6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0 0 .35rem .35rem; }
+.sidebar details > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: .25rem; font-size: .6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); padding: .2rem .35rem; border-radius: 5px; }
+.sidebar details > summary::-webkit-details-marker { display: none; }
+.sidebar details > summary .i { width: .85rem; height: .85rem; transition: transform var(--speed); }
+.sidebar details[open] > summary .i { transform: rotate(90deg); }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.col-btn, .tree-item { width: 100%; display: flex; align-items: center; gap: .45rem; padding: .32rem .5rem; border: 0; border-radius: 6px; background: none; text-align: left; color: var(--ink); line-height: 1.3; }
+.col-btn:hover, .tree-item:hover { background: var(--hover); }
+.col-btn[aria-pressed="true"] { background: var(--page); box-shadow: inset 0 0 0 1px var(--line); font-weight: 600; }
+.col-btn span:first-of-type, .ti-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tree-item .i { color: var(--ink-3); width: 1rem; height: 1rem; }
+.tree-item[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.tree-item[aria-current="page"] .i { color: var(--accent); }
+.tree-dir .twisty { width: .8rem; height: .8rem; transition: transform var(--speed); }
+.tree-dir[aria-expanded="true"] .twisty { transform: rotate(90deg); }
+.tree-sub { margin-left: .95rem !important; padding-left: .35rem !important; border-left: 1px solid var(--line); }
+.ti-star { color: var(--warn) !important; fill: currentColor !important; width: .8rem !important; height: .8rem !important; }
+.ti-path { display: block; font-size: .75rem; color: var(--ink-3); font-weight: 400; }
+.filter { position: relative; }
+.filter input { width: 100%; padding: .38rem .55rem .38rem 1.9rem; border: 1px solid var(--line); border-radius: 7px; background: var(--page); color: var(--ink); font-size: .875rem; }
+.filter .i { position: absolute; left: .55rem; top: 50%; transform: translateY(-50%); width: .95rem; height: .95rem; color: var(--ink-3); }
+.side-empty { font-size: .8125rem; color: var(--ink-3); padding: .25rem .5rem; margin: 0; }
+.side-list .tree-item { font-size: .875rem; }
+
+/* ---------- Reader panes ---------- */
+.panes { height: 100%; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; }
+.pane { display: grid; grid-template-rows: auto auto auto auto minmax(0, 1fr) auto; min-width: 0; min-height: 0; background: var(--page); }
+.panes.is-split .pane.is-active .tabbar { box-shadow: inset 0 2px 0 var(--accent); }
+.divider { width: .5rem; cursor: col-resize; background: var(--panel); border-inline: 1px solid var(--line); position: relative; touch-action: none; }
+.divider::after { content: ""; position: absolute; left: 50%; top: 50%; width: 2px; height: 2.5rem; transform: translate(-50%, -50%); border-radius: 2px; background: var(--ink-3); opacity: .5; }
+.divider:hover::after, .divider:focus-visible::after { background: var(--accent); opacity: 1; }
+.tabbar { display: flex; align-items: stretch; background: var(--panel); border-bottom: 1px solid var(--line); min-width: 0; }
+.tabs { display: flex; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: thin; }
+.tabs-empty { padding: .55rem .75rem; color: var(--ink-3); font-size: .8125rem; }
+.tab { display: flex; align-items: center; max-width: 13.5rem; min-width: 7rem; border-right: 1px solid var(--line); color: var(--ink-2); }
+.tab.is-active { background: var(--page); color: var(--ink); box-shadow: inset 0 -1px 0 var(--page); }
+.tab-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: .4rem; padding: .5rem .25rem .5rem .65rem; border: 0; background: none; font-size: .8125rem; text-align: left; }
+.tab-main span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tab-main .i { width: .95rem; height: .95rem; color: var(--ink-3); }
+.tab.is-active .tab-main { font-weight: 600; }
+.tab-close { width: 1.6rem; height: 1.6rem; margin-right: .3rem; display: grid; place-items: center; border: 0; border-radius: 5px; background: none; color: var(--ink-3); }
+.tab-close:hover { background: var(--hover); color: var(--ink); }
+.tab-close .i { width: .85rem; height: .85rem; }
+.tabbar-end { display: flex; align-items: center; padding-inline: .25rem; }
+.toolbar { display: flex; align-items: center; gap: .15rem; padding: .3rem .5rem; border-bottom: 1px solid var(--line); min-width: 0; }
+.crumbs { flex: 1; min-width: 0; margin-left: .35rem; }
+.crumbs ol { display: flex; align-items: center; list-style: none; margin: 0; padding: 0; font-size: .8125rem; color: var(--ink-3); white-space: nowrap; overflow: hidden; }
+.crumbs li { display: flex; align-items: center; min-width: 0; overflow: hidden; }
+.crumbs li:not(:last-child) { flex-shrink: 4; }
+.crumbs button, .crumbs [aria-current] span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.crumbs li + li::before { content: "›"; margin: 0 .35rem; color: var(--ink-3); }
+.crumbs button { background: none; border: 0; padding: .1rem .2rem; border-radius: 4px; color: var(--ink-2); }
+.crumbs button:hover { background: var(--hover); color: var(--ink); }
+.crumbs [aria-current] { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.tool-actions { display: flex; gap: .1rem; }
+.progress { height: 3px; background: transparent; }
+.progress-fill { height: 100%; width: 0; background: var(--accent); transition: width 120ms linear; }
+.findbar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; padding: .35rem .75rem; background: var(--accent-soft); border-bottom: 1px solid var(--line); font-size: .8125rem; }
+.findbar .grow { flex: 1; }
+.scroller { position: relative; overflow-y: auto; overflow-x: hidden; min-height: 0; background: var(--page); scroll-behavior: smooth; }
+.scroller:focus-visible { outline-offset: -3px; }
+.page { padding: 2.25rem clamp(1rem, 4vw, 3rem) 5rem; }
+.statusbar { display: flex; align-items: center; gap: .9rem; flex-wrap: wrap; padding: .28rem .75rem; border-top: 1px solid var(--line); background: var(--panel); color: var(--ink-3); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.statusbar .i { width: .85rem; height: .85rem; }
+.statusbar .ro { display: inline-flex; align-items: center; gap: .3rem; color: var(--ink-2); }
+.empty-pane { max-width: 30rem; margin: 3rem auto; text-align: center; display: grid; justify-items: center; gap: .5rem; }
+.empty-pane h2 { font-family: var(--font-serif); font-weight: 600; margin: .5rem 0 0; font-size: 1.35rem; }
+.empty-pane ul { list-style: none; padding: 0; margin: .25rem 0 1rem; display: grid; gap: .35rem; }
+
+/* ---------- Rendered document ---------- */
+.doc { font-family: var(--read-font); font-size: var(--read-size); line-height: var(--read-lh); max-width: var(--read-width); margin-inline: auto; color: var(--ink); overflow-wrap: break-word; }
+.doc > :first-child { margin-top: 0; }
+.doc h1, .doc h2, .doc h3, .doc h4, .doc h5, .doc h6 { line-height: 1.25; font-weight: 600; text-wrap: balance; scroll-margin-top: 1rem; }
+.doc h1 { font-size: 2.15em; margin: 0 0 .35em; letter-spacing: -.01em; }
+.doc h2 { font-size: 1.45em; margin: 1.9em 0 .5em; }
+.doc h3 { font-size: 1.15em; margin: 1.6em 0 .4em; }
+.doc h4 { font-size: 1em; margin: 1.4em 0 .3em; color: var(--ink-2); }
+.doc h1:focus, .doc h2:focus, .doc h3:focus, .doc h4:focus { outline: none; }
+.doc p, .doc ul, .doc ol, .doc pre, .doc .table-wrap, .doc figure, .doc aside, .doc blockquote { margin: .9em 0; }
+.doc ul, .doc ol { padding-left: 1.4em; }
+.doc li + li { margin-top: .3em; }
+.doc li:has(> input[type="checkbox"]) { list-style: none; margin-left: -1.3em; }
+.doc input[type="checkbox"] { margin: 0 .5em 0 0; accent-color: var(--accent); width: 1em; height: 1em; vertical-align: -.1em; }
+.doc strong { font-weight: 600; }
+.doc a { color: var(--accent); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .18em; }
+.doc a:hover { text-decoration-thickness: 2px; }
+.doc a .ext-i { width: .75em; height: .75em; margin-left: .15em; vertical-align: 0; }
+.doc a.broken { color: var(--danger); text-decoration-style: dotted; text-decoration-thickness: 2px; }
+.doc a.broken .broken-i { width: .8em; height: .8em; margin-left: .2em; vertical-align: -.05em; }
+.doc code { font-family: var(--font-mono); font-size: .86em; background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+.code-block { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; margin: 1em 0; background: var(--code-bg); }
+.code-head { display: flex; align-items: center; justify-content: space-between; padding: .25rem .4rem .25rem .8rem; font-family: var(--font-ui); font-size: .75rem; color: var(--ink-3); border-bottom: 1px solid var(--line); }
+.code-block pre { margin: 0; padding: .9em 1em; overflow-x: auto; font-size: .82em; line-height: 1.55; }
+.code-block pre code { background: none; padding: 0; font-size: 1em; }
+.table-wrap { overflow-x: auto; }
+.doc table { border-collapse: collapse; width: 100%; font-family: var(--font-ui); font-size: .86em; line-height: 1.45; }
+.doc th { text-align: left; font-weight: 600; border-bottom: 2px solid var(--line); padding: .5em .75em; color: var(--ink-2); }
+.doc td { border-bottom: 1px solid var(--line); padding: .55em .75em; vertical-align: top; }
+.doc blockquote { padding-left: 1em; border-left: 3px solid var(--line); color: var(--ink-2); }
+.doc img { max-width: 100%; height: auto; border-radius: 6px; display: block; }
+.doc figure { margin-inline: 0; }
+.doc figcaption, .diagram figcaption { font-family: var(--font-ui); font-size: .8125rem; color: var(--ink-3); margin-top: .5em; }
+.doc hr { border: 0; border-top: 1px solid var(--line); margin: 2em 0; }
+.doc kbd { font-size: .8em; }
+.doc-meta { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .9rem; margin: 0 0 1.6em; padding-bottom: 1.1em; border-bottom: 1px solid var(--line); font-family: var(--font-ui); font-size: .8125rem; color: var(--ink-3); }
+.doc-meta .tags { display: flex; gap: .3rem; flex-wrap: wrap; }
+.doc-meta .link-btn { font-size: .8125rem; }
+.callout { border-radius: 8px; padding: .75em 1em; background: var(--c-soft); color: var(--ink); font-size: .95em; border: 1px solid transparent; }
+:root[data-contrast="high"] .callout { border-color: var(--c); }
+.callout > :last-child { margin-bottom: 0; }
+.callout > :nth-child(2) { margin-top: .2em; }
+.callout-title { display: flex; align-items: center; gap: .4em; margin: 0; font-family: var(--font-ui); font-weight: 700; font-size: .8em; letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+.callout-note { --c: var(--info); --c-soft: var(--info-soft); }
+.callout-tip { --c: var(--tip); --c-soft: var(--tip-soft); }
+.callout-important { --c: var(--imp); --c-soft: var(--imp-soft); }
+.callout-warning { --c: var(--warn); --c-soft: var(--warn-soft); }
+.callout-caution { --c: var(--danger); --c-soft: var(--danger-soft); }
+.math-block { overflow-x: auto; overflow-y: hidden; margin: 1.2em 0; font-size: 1.1em; text-align: center; }
+.diagram { margin: 1.2em 0; padding: 1em; border: 1px solid var(--line); border-radius: 8px; background: var(--page); text-align: center; }
+.diagram-body { overflow-x: auto; }
+.diagram-body svg { max-width: 100%; height: auto; }
+.diagram-body pre { text-align: left; }
+.remote-img .remote-box, .missing-img { display: flex; gap: .9rem; align-items: flex-start; padding: 1rem; border: 1px dashed var(--ink-3); border-radius: 8px; background: var(--panel); font-family: var(--font-ui); font-size: .875rem; line-height: 1.5; }
+.remote-box p, .missing-img p { margin: 0 0 .6rem; }
+.remote-box .i, .missing-img .i { width: 1.6rem; height: 1.6rem; color: var(--ink-3); margin-top: .1rem; }
+mark.hit { background: var(--mark); color: var(--mark-ink); border-radius: 2px; padding: 0 .05em; }
+mark.hit.current { outline: 2px solid var(--accent); outline-offset: 1px; }
+.img-view img { margin-inline: auto; border: 1px solid var(--line); }
+
+/* ---------- Table of contents ---------- */
+.toc-head { display: flex; align-items: center; justify-content: space-between; gap: .25rem; margin-bottom: .2rem; }
+.toc-head h2 { font-size: .6875rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin: 0; }
+.toc-doc { font-family: var(--font-serif); font-weight: 600; font-size: .95rem; line-height: 1.3; margin: .1rem 0 .7rem; color: var(--ink); }
+.toc ol { list-style: none; margin: 0; padding: 0; }
+.toc ol ol { margin-left: .85rem; border-left: 1px solid var(--line); padding-left: .2rem; }
+.toc-row { display: flex; align-items: flex-start; }
+.toc-twisty, .toc-spacer { flex: none; width: 1.25rem; height: 1.6rem; display: grid; place-items: center; background: none; border: 0; border-radius: 4px; color: var(--ink-3); padding: 0; }
+.toc-twisty:hover { background: var(--hover); }
+.toc-twisty .i { width: .75rem; height: .75rem; transition: transform var(--speed); }
+.toc-twisty[aria-expanded="true"] .i { transform: rotate(90deg); }
+.toc-link { flex: 1; display: block; padding: .22rem .4rem; border-radius: 5px; color: var(--ink-2); text-decoration: none; font-size: .8125rem; line-height: 1.35; }
+.toc-link:hover { background: var(--hover); color: var(--ink); }
+.toc-link.current { color: var(--accent); background: var(--accent-soft); font-weight: 600; }
+.toc-tools { display: flex; gap: .1rem; }
+
+/* ---------- Secondary views ---------- */
+.view-inner { max-width: 54rem; margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 2.5rem) 4rem; }
+.view-inner.wide { max-width: 68rem; }
+.view h1.vt { font-family: var(--font-serif); font-weight: 600; font-size: 1.9rem; line-height: 1.2; margin: 0 0 .35rem; text-wrap: balance; }
+.view h1.vt:focus { outline: none; }
+.lede { color: var(--ink-2); margin: 0 0 1.5rem; max-width: 60ch; font-size: 1rem; }
+.eyebrow { font-size: .6875rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); margin: 0 0 .5rem; }
+.section-h { font-size: 1rem; font-weight: 600; margin: 0 0 .7rem; display: flex; align-items: center; gap: .45rem; }
+.section-h .i { color: var(--ink-3); }
+.note { display: flex; gap: .5rem; align-items: flex-start; font-size: .8125rem; color: var(--ink-2); background: var(--panel); border-radius: 8px; padding: .6rem .8rem; margin: 0; max-width: 64ch; }
+.note .i { color: var(--info); margin-top: .05rem; }
+
+/* Home */
+.home-hero { padding: 1.5rem 0 2rem; border-bottom: 1px solid var(--line); margin-bottom: 1.75rem; }
+.home-hero h1 { font-size: clamp(1.9rem, 4vw, 2.6rem) !important; }
+.home-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: .75rem; margin: 0 0 1rem; }
+.action-card { display: flex; align-items: flex-start; gap: .75rem; padding: 1rem; border: 1px solid var(--line); border-radius: 10px; background: var(--page); text-align: left; color: var(--ink); }
+.action-card:hover { border-color: var(--accent); }
+.action-card .i { width: 1.5rem; height: 1.5rem; color: var(--accent); margin-top: .1rem; }
+.action-card strong { display: block; font-size: 1rem; font-weight: 600; }
+.action-card small { display: block; color: var(--ink-3); font-size: .8125rem; margin-top: .15rem; }
+.action-card.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.action-card.primary .i, .action-card.primary small { color: var(--accent-ink); opacity: .9; }
+.home-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: 2rem 2.5rem; }
+.home-grid section { min-width: 0; }
+.rows { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.rows > li { display: flex; align-items: center; gap: .6rem; padding: .55rem .1rem; border-bottom: 1px solid var(--line); min-width: 0; }
+.rows .row-main { flex: 1; min-width: 0; }
+.rows .row-title { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rows .row-sub { display: block; font-size: .75rem; color: var(--ink-3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rows button.row-open { background: none; border: 0; padding: 0; text-align: left; color: inherit; width: 100%; }
+.rows button.row-open:hover .row-title { color: var(--accent); text-decoration: underline; }
+.rows .i { color: var(--ink-3); }
+.btn-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .9rem; }
+.mini-bar { width: 3.5rem; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; flex: none; }
+.mini-bar > span { display: block; height: 100%; background: var(--accent); }
+.star-btn { background: none; border: 0; padding: .2rem; border-radius: 5px; color: var(--ink-3); display: grid; }
+.star-btn[aria-pressed="true"] { color: var(--warn); }
+.star-btn[aria-pressed="true"] .i { fill: currentColor; }
+.star-btn:hover { background: var(--hover); }
+
+/* Search */
+.search-form { display: flex; gap: .5rem; }
+.search-form .search-wrap { max-width: none; margin: 0; }
+.search-form .search-wrap input { height: 2.75rem; font-size: 1rem; }
+.search-opts { display: flex; flex-wrap: wrap; gap: .75rem 1.25rem; align-items: center; margin: 1rem 0 1.25rem; font-size: .875rem; }
+.search-opts .seg { min-width: min(100%, 24rem); }
+.check { display: inline-flex; align-items: center; gap: .4rem; cursor: pointer; }
+.check input { accent-color: var(--accent); width: 1rem; height: 1rem; margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; margin: 0; padding: 0; }
+.chip { display: inline-flex; align-items: center; gap: .3rem; padding: .3rem .7rem; border: 1px solid var(--line); border-radius: 99px; background: var(--page); font-size: .8125rem; color: var(--ink); }
+.chip:hover { border-color: var(--accent); color: var(--accent); }
+.result { padding: 1rem 0; border-bottom: 1px solid var(--line); }
+.result h2 { margin: 0 0 .1rem; font-size: 1.05rem; font-weight: 600; }
+.result h2 button { background: none; border: 0; padding: 0; color: var(--ink); text-align: left; }
+.result h2 button:hover { color: var(--accent); text-decoration: underline; }
+.result .r-path { font-size: .75rem; color: var(--ink-3); margin: 0 0 .5rem; }
+.result ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem; }
+.hit-btn { width: 100%; display: grid; gap: .15rem; text-align: left; background: none; border: 0; padding: .45rem .6rem; border-radius: 7px; color: var(--ink); }
+.hit-btn:hover { background: var(--hover); }
+.hit-head { display: flex; align-items: center; gap: .35rem; font-size: .8125rem; font-weight: 600; color: var(--ink-2); }
+.hit-head .i { width: .85rem; height: .85rem; color: var(--ink-3); }
+.hit-snip { font-family: var(--font-serif); font-size: .9rem; color: var(--ink-2); line-height: 1.5; }
+.hit-snip mark, .hit-head mark { background: var(--mark); color: var(--mark-ink); border-radius: 2px; }
+.summary { font-size: .875rem; color: var(--ink-3); margin: 0 0 .25rem; min-height: 1.3em; }
+
+/* Library */
+.lib-tabs { display: flex; gap: .25rem; border-bottom: 1px solid var(--line); margin-bottom: 1rem; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.lib-tabs button { background: none; border: 0; padding: .55rem .8rem; color: var(--ink-2); border-bottom: 2px solid transparent; margin-bottom: -1px; white-space: nowrap; display: inline-flex; gap: .4rem; align-items: center; }
+.lib-tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.lib-tabs .count { font-size: .75rem; background: var(--hover); border-radius: 99px; padding: 0 .4rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.lib-controls { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; margin-bottom: .75rem; font-size: .875rem; }
+.lib-controls .filter { flex: 1; min-width: 12rem; max-width: 22rem; }
+.table-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--page); }
+.lib-table { width: 100%; border-collapse: collapse; font-size: .875rem; font-variant-numeric: tabular-nums; }
+.lib-table caption { text-align: left; padding: .6rem .9rem; font-size: .8125rem; color: var(--ink-3); border-bottom: 1px solid var(--line); }
+.lib-table th { text-align: left; font-weight: 600; font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; color: var(--ink-3); padding: .55rem .9rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.lib-table td { padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.lib-table tr:last-child td { border-bottom: 0; }
+.lib-table .t-title { font-weight: 600; }
+.lib-table .t-sub { display: block; font-size: .75rem; color: var(--ink-3); font-weight: 400; }
+.lib-table .actions { display: flex; gap: .25rem; justify-content: flex-end; white-space: nowrap; }
+.pct { display: flex; align-items: center; gap: .5rem; white-space: nowrap; }
+.empty-state { padding: 2.5rem 1rem; text-align: center; color: var(--ink-3); }
+
+/* Preferences */
+.prefs-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 2rem; align-items: start; }
+.prefs { display: grid; gap: 1.25rem; }
+.prefs fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: .45rem; }
+.prefs legend, .field > label, .field-label { font-weight: 600; font-size: .875rem; padding: 0; margin-bottom: .1rem; }
+.field { display: grid; gap: .35rem; }
+.field .hint, .prefs .hint { font-size: .8125rem; color: var(--ink-3); margin: 0; }
+.range-row { display: flex; align-items: center; gap: .75rem; }
+.range-row input[type="range"] { flex: 1; accent-color: var(--accent); }
+.range-row output { min-width: 4.5rem; text-align: right; font-variant-numeric: tabular-nums; font-size: .875rem; color: var(--ink-2); }
+.switch { display: flex; align-items: flex-start; gap: .65rem; cursor: pointer; }
+.switch input { appearance: none; flex: none; width: 2.4rem; height: 1.4rem; border-radius: 99px; background: var(--line); position: relative; margin: .05rem 0 0; cursor: pointer; transition: background var(--speed); }
+.switch input::after { content: ""; position: absolute; top: .2rem; left: .2rem; width: 1rem; height: 1rem; border-radius: 50%; background: var(--page); box-shadow: 0 1px 2px rgb(0 0 0 / .3); transition: transform var(--speed); }
+.switch input:checked { background: var(--accent); }
+.switch input:checked::after { transform: translateX(1rem); }
+.switch strong { display: block; font-size: .875rem; font-weight: 600; }
+.switch span span { display: block; font-size: .8125rem; color: var(--ink-3); }
+.preview-box { position: sticky; top: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--page); padding: 1.25rem 1.5rem; }
+.preview-box .doc { max-width: none; }
+.preview-box .doc h2 { margin-top: .2em; }
+
+/* Help */
+.help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+.promise { padding: 1rem; border-radius: 10px; background: var(--panel); }
+.promise h3 { display: flex; align-items: center; gap: .5rem; font-size: .95rem; margin: 0 0 .35rem; }
+.promise h3 .i { color: var(--accent); }
+.promise p { margin: 0 0 .5rem; font-size: .875rem; color: var(--ink-2); }
+.promise .proto { font-size: .8125rem; color: var(--ink-3); margin: 0; }
+.help-section { padding: 1.5rem 0; border-top: 1px solid var(--line); }
+.help-section h2 { font-size: 1.15rem; margin: 0 0 .5rem; font-weight: 600; }
+.help-section > p { color: var(--ink-2); max-width: 64ch; margin: 0 0 .9rem; font-size: .9375rem; }
+.radio-list { display: grid; gap: .5rem; }
+.radio-list label { display: flex; gap: .55rem; align-items: flex-start; cursor: pointer; font-size: .9rem; }
+.radio-list input { accent-color: var(--accent); margin-top: .2rem; }
+.radio-list small { display: block; color: var(--ink-3); font-size: .8125rem; }
+.cmp { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.cmp th, .cmp td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cmp th { font-size: .75rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); }
+.cmp td:first-child { font-weight: 600; }
+.faq details { border-bottom: 1px solid var(--line); padding: .6rem 0; }
+.faq summary { cursor: pointer; font-weight: 600; font-size: .9375rem; }
+.faq details p { color: var(--ink-2); margin: .5rem 0 .2rem; max-width: 64ch; font-size: .9rem; }
+.shortcuts { display: grid; grid-template-columns: auto 1fr; gap: .45rem 1rem; font-size: .875rem; margin: 0; }
+.shortcuts dt { white-space: nowrap; }
+.shortcuts dd { margin: 0; color: var(--ink-2); }
+
+/* Dialog & toast */
+dialog { border: 1px solid var(--line); border-radius: 12px; padding: 0; width: min(32rem, calc(100vw - 32px)); background: var(--page); color: var(--ink); box-shadow: 0 24px 64px rgb(0 0 0 / .25); }
+dialog.wide { width: min(42rem, calc(100vw - 32px)); }
+dialog::backdrop { background: rgb(10 15 12 / .45); }
+.dlg-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem 1.25rem .25rem; }
+.dlg-head h2 { margin: 0; font-size: 1.15rem; font-weight: 600; font-family: var(--font-serif); }
+.dlg-body { padding: .5rem 1.25rem; font-size: .9375rem; line-height: 1.55; max-height: 65vh; overflow-y: auto; }
+.dlg-body p { margin: 0 0 .75rem; }
+.dlg-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: .5rem; padding: .75rem 1.25rem 1.1rem; }
+.url-box { font-family: var(--font-mono); font-size: .8125rem; background: var(--code-bg); padding: .5rem .7rem; border-radius: 6px; word-break: break-all; }
+.proto-note { display: flex; gap: .45rem; align-items: flex-start; font-size: .8125rem; color: var(--ink-2); background: var(--info-soft); border-radius: 7px; padding: .5rem .7rem; }
+.proto-note .i { color: var(--info); margin-top: .1rem; }
+.info-table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+.info-table th { text-align: left; font-weight: 600; color: var(--ink-3); padding: .4rem .75rem .4rem 0; vertical-align: top; white-space: nowrap; width: 9rem; }
+.info-table td { padding: .4rem 0; border-bottom: 1px solid var(--line); }
+.info-table tr:last-child td { border-bottom: 0; }
+.dlg-sub { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-3); margin: 1.1rem 0 .3rem; font-weight: 700; }
+.toast { position: fixed; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 1rem); z-index: 200; max-width: min(34rem, calc(100vw - 32px)); background: var(--ink); color: var(--paper); padding: .6rem 1rem; border-radius: 8px; font-size: .875rem; box-shadow: var(--shadow); opacity: 0; pointer-events: none; transition: opacity var(--speed), transform var(--speed); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* ---------- Narrow screens ---------- */
+@media (max-width: 1080px) {
+  .toc { position: absolute; right: 0; top: 0; bottom: 0; z-index: 20; box-shadow: var(--shadow); }
+}
+@media (max-width: 780px) {
+  body { padding-block: 8px; }
+  .sidebar { position: absolute; left: 0; top: 0; bottom: 0; z-index: 25; width: min(17rem, 86%); box-shadow: var(--shadow); }
+  .toc { width: min(15.5rem, 86%); }
+  .brand-name, .ws-select .ws-label, .kbd-hint, .proto-note-s { display: none; }
+  .ws-select select { max-width: 6.5rem; }
+  .panes.is-split { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) minmax(0, 1fr); }
+  .panes.is-split .divider { display: none; }
+  .prefs-grid { grid-template-columns: minmax(0, 1fr); }
+  .preview-box { position: static; }
+  .tool-actions .icon-btn.sm { width: 1.85rem; }
+  .page { padding-top: 1.5rem; }
+  .lib-table .hide-sm { display: none; }
+}
+@media (max-width: 520px) {
+  .ws-select, .appbar [data-goto="prefs"] { display: none; }
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-logo" viewBox="0 0 24 24"><path d="M2 5.5c3.2-1.3 6.8-1.2 10 .8 3.2-2 6.8-2.1 10-.8v13c-3.2-1.3-6.8-1.2-10 .8-3.2-2-6.8-2.1-10-.8z"/><path d="M12 6.3v13"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></symbol>
+  <symbol id="i-file-plus" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-folder-open" viewBox="0 0 24 24"><path d="M3 17V7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v1.5"/><path d="M3 17.5 5.6 11h15.4L18.5 18a1.5 1.5 0 0 1-1.4 1H4.5A1.5 1.5 0 0 1 3 17.5z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z"/></symbol>
+  <symbol id="i-star-fill" viewBox="0 0 24 24"><path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2L12 17.3l-5.6 2.9 1.1-6.2L3 9.6l6.2-.9z" fill="currentColor"/></symbol>
+  <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4.2L6 21z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.2-2.5 3.8"/><path d="M12 17.2h.01"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M4.6 4.6 6 6M18 18l1.4 1.4M2.5 12h2M19.5 12h2M4.6 19.4 6 18M18 6l1.4-1.4"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 13.5A8.5 8.5 0 1 1 10.5 3.5a6.6 6.6 0 0 0 10 10z"/></symbol>
+  <symbol id="i-monitor" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></symbol>
+  <symbol id="i-sidebar" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M9 4v16"/></symbol>
+  <symbol id="i-toc" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16M6.5 8.5h5M6.5 12h5M6.5 15.5h3"/></symbol>
+  <symbol id="i-columns" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M12 4v16"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 6l-6 6 6 6"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+  <symbol id="i-chev-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+  <symbol id="i-chev-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.6h.01"/></symbol>
+  <symbol id="i-external" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.5c0 4.7 3.2 8.2 7.5 9.5 4.3-1.3 7.5-4.8 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4z"/><path d="M10 20v-5.5h4V20"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 4 2.6 18a2 2 0 0 0 1.7 3h15.4a2 2 0 0 0 1.7-3L13.7 4a2 2 0 0 0-3.4 0z"/><path d="M12 9.5v4M12 17h.01"/></symbol>
+  <symbol id="i-hash" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14M10 4 8 20M16 4l-2 16"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+  <symbol id="i-restore" viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1L3.5 8.5"/><path d="M3.5 3.5v5h5M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-offline" viewBox="0 0 24 24"><path d="M3 3l18 18M8.5 16.5a5 5 0 0 1 6.2-.6M5 12.8a10 10 0 0 1 4.2-2.4M19 12.8a10 10 0 0 0-2.6-1.8M12 20h.01M2 9a15 15 0 0 1 4.4-2.8M22 9a15 15 0 0 0-9.6-3.9"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a17 17 0 0 1-2.9 3.6M6.6 6.6C3.9 8.3 2.5 12 2.5 12S6 18 12 18a9.7 9.7 0 0 0 4.4-1M9.9 9.9a3 3 0 0 0 4.2 4.2"/></symbol>
+  <symbol id="i-upload-off" viewBox="0 0 24 24"><path d="M12 15V4M8 8l4-4 4 4M4 15v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/><path d="M3 3l18 18"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M4 19 9 5l5 14M5.8 14.5h6.4M15 19l3-8.5 3 8.5M16 16.5h4"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+</svg>
+
+<a class="skip" href="#main">Skip to the document</a>
+<div class="app">
+  <div class="proto-strip" role="region" aria-label="Prototype controls">
+    <span class="proto-tag" data-i18n="proto">Prototype</span>
+    <span class="proto-note-s" data-i18n="proto_note">Simulated desktop app, not production software</span>
+    <nav aria-label="Prototype screens">
+      <button data-act="goto" data-goto="home"><span class="num">1</span><span data-i18n="nav_home">Home</span></button>
+      <button data-act="goto" data-goto="reader"><span class="num">2</span><span data-i18n="nav_reader">Reading</span></button>
+      <button data-act="goto" data-goto="search"><span class="num">3</span><span data-i18n="nav_search">Search</span></button>
+      <button data-act="goto" data-goto="split"><span class="num">4</span><span data-i18n="nav_split">Side by side</span></button>
+      <button data-act="goto" data-goto="prefs"><span class="num">5</span><span data-i18n="nav_prefs">Preferences</span></button>
+      <button data-act="goto" data-goto="library"><span class="num">6</span><span data-i18n="nav_library">Library</span></button>
+      <button data-act="goto" data-goto="help"><span class="num">7</span><span data-i18n="nav_help">Privacy &amp; Help</span></button>
+    </nav>
+  </div>
+
+  <header class="appbar">
+    <button class="icon-btn toggle" id="sidebar-toggle" data-act="sidebar" aria-expanded="true" aria-controls="sidebar" aria-label="Show or hide the library panel" title="Library panel ( [ )"><svg class="i" aria-hidden="true"><use href="#i-sidebar"/></svg></button>
+    <button class="brand" data-act="goto" data-goto="home" aria-label="Folio home"><svg class="i" aria-hidden="true"><use href="#i-logo"/></svg><span class="brand-name">Folio</span></button>
+    <label class="ws-select"><span class="ws-label" data-i18n="workspace">Workspace</span><select id="ws-select" aria-label="Workspace"></select></label>
+    <div class="search-wrap" id="gsearch-wrap">
+      <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+      <input id="gsearch" type="search" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="gsuggest" aria-autocomplete="list" aria-label="Search documents" data-i18n-ph="search_ph" placeholder="Search documents">
+      <span class="kbd-hint" aria-hidden="true">/</span>
+      <ul class="suggest" id="gsuggest" role="listbox" aria-label="Suggestions" hidden></ul>
+    </div>
+    <div class="bar-group" style="position:relative">
+      <button class="icon-btn" id="appearance-btn" data-act="appearance" aria-expanded="false" aria-controls="appearance-pop" aria-label="Appearance" title="Appearance"><svg class="i" aria-hidden="true"><use href="#i-sun"/></svg></button>
+      <div class="popover" id="appearance-pop" role="dialog" aria-label="Appearance" hidden>
+        <h2>Colour theme</h2>
+        <div class="swatches" id="pop-themes" role="group" aria-label="Colour theme"></div>
+        <h2>Text size</h2>
+        <div class="size-row">
+          <button class="btn sm" data-act="font-step" data-step="-1" aria-label="Smaller text">A−</button>
+          <output id="pop-size" aria-live="polite">18 px</output>
+          <button class="btn sm" data-act="font-step" data-step="1" aria-label="Larger text">A+</button>
+        </div>
+        <button class="link-btn" data-act="goto" data-goto="prefs">All reading preferences</button>
+      </div>
+      <button class="icon-btn" data-act="goto" data-goto="prefs" aria-label="Settings" title="Settings"><svg class="i" aria-hidden="true"><use href="#i-gear"/></svg></button>
+      <button class="icon-btn" data-act="help" aria-label="Help for this screen" title="Help"><svg class="i" aria-hidden="true"><use href="#i-help"/></svg></button>
+      <button class="icon-btn toggle" id="toc-toggle" data-act="toc-panel" aria-expanded="true" aria-controls="toc" aria-label="Show or hide the contents panel" title="Contents panel ( ] )"><svg class="i" aria-hidden="true"><use href="#i-toc"/></svg></button>
+    </div>
+  </header>
+
+  <div class="workspace" id="workspace" data-view="home" data-sidebar="open" data-toc="open">
+    <aside class="sidebar" id="sidebar" aria-label="Library">
+      <section aria-labelledby="col-h">
+        <h2 class="side-h" id="col-h"><span data-i18n="collections">Collections</span></h2>
+        <ul id="col-list"></ul>
+      </section>
+      <section aria-labelledby="docs-h">
+        <h2 class="side-h" id="docs-h"><span data-i18n="documents">Documents</span></h2>
+        <div class="filter"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="tree-filter" type="search" aria-label="Filter documents" data-i18n-ph="filter_ph" placeholder="Filter documents"></div>
+        <nav id="tree" aria-label="Documents in this collection" style="margin-top:.4rem"></nav>
+      </section>
+      <details open id="side-fav-d"><summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="favorites">Favorites</span></summary><ul class="side-list" id="side-favs"></ul></details>
+      <details open id="side-bm-d"><summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="bookmarks">Bookmarks</span></summary><ul class="side-list" id="side-bms"></ul></details>
+      <details open id="side-rec-d"><summary><svg class="i" aria-hidden="true"><use href="#i-chevron"/></svg><span data-i18n="recent">Recent</span></summary><ul class="side-list" id="side-recent"></ul></details>
+    </aside>
+
+    <main id="main" tabindex="-1">
+      <!-- Screen 1 -->
+      <section class="view" id="view-home" aria-labelledby="home-h">
+        <div class="view-inner wide">
+          <header class="home-hero">
+            <p class="eyebrow">Local document reader</p>
+            <h1 class="vt" id="home-h" tabindex="-1" data-i18n="welcome">Welcome to Folio</h1>
+            <p class="lede" data-i18n="welcome_sub">Open a document or a folder and read it like a book. Your files stay on your computer.</p>
+            <div class="home-actions">
+              <button class="action-card" data-act="open-file"><svg class="i" aria-hidden="true"><use href="#i-file-plus"/></svg><span><strong data-i18n="open_file">Open a document</strong><small>Read one file from your computer</small></span></button>
+              <button class="action-card" data-act="open-folder"><svg class="i" aria-hidden="true"><use href="#i-folder-open"/></svg><span><strong data-i18n="open_folder">Open a folder</strong><small>Browse a whole wiki or notes folder</small></span></button>
+              <button class="action-card primary" data-act="explore"><svg class="i" aria-hidden="true"><use href="#i-book"/></svg><span><strong data-i18n="explore">Explore the sample library</strong><small>A small handbook to try everything out</small></span></button>
+            </div>
+            <p class="note"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><span>This browser prototype reads files you choose inside this tab only. Nothing is uploaded. A browser can't reopen your files automatically next time, and it can only open folders you pick yourself. The desktop app is planned to remember them.</span></p>
+          </header>
+          <div class="home-grid">
+            <section id="home-session" aria-labelledby="hs-h"></section>
+            <section id="home-recent" aria-labelledby="hr-h"></section>
+            <section id="home-cols" aria-labelledby="hc-h"></section>
+            <section id="home-ws" aria-labelledby="hw-h"></section>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screens 2 & 4 -->
+      <section class="view" id="view-reader" aria-label="Reading" hidden>
+        <div class="panes" id="panes">
+          <div class="pane" id="pane-0" data-pane="0"></div>
+          <div class="divider" id="divider" role="separator" aria-orientation="vertical" aria-label="Resize the two reading panes" aria-valuemin="25" aria-valuemax="75" aria-valuenow="50" tabindex="0" title="Drag to resize. Double-click to reset." hidden></div>
+          <div class="pane" id="pane-1" data-pane="1" hidden></div>
+        </div>
+      </section>
+
+      <!-- Screen 3 -->
+      <section class="view" id="view-search" aria-labelledby="search-h" hidden>
+        <div class="view-inner">
+          <h1 class="vt" id="search-h" tabindex="-1" data-i18n="search_title">Search</h1>
+          <p class="lede">Search every page, a single collection, or the document you're reading. Headings count as matches too.</p>
+          <form class="search-form" id="search-form" role="search">
+            <div class="search-wrap"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="sq" type="search" autocomplete="off" aria-label="Search for" placeholder="For example: Wi-Fi, holds, remote images"></div>
+            <button class="btn btn-primary" type="submit">Search</button>
+          </form>
+          <div class="search-opts">
+            <div class="seg" role="radiogroup" aria-label="Where to search">
+              <label><input type="radio" name="scope" value="workspace" checked>Everywhere</label>
+              <label><input type="radio" name="scope" value="collection">This collection</label>
+              <label id="scope-doc-l"><input type="radio" name="scope" value="doc">Current document</label>
+            </div>
+            <label class="check"><input type="checkbox" id="opt-headings">Headings only</label>
+            <label class="check"><input type="checkbox" id="opt-whole">Whole words</label>
+            <label class="check">Folder <select id="opt-folder"><option value="">All folders</option></select></label>
+          </div>
+          <p class="summary" id="search-summary" aria-live="polite"></p>
+          <div id="search-results"></div>
+        </div>
+      </section>
+
+      <!-- Screen 5 -->
+      <section class="view" id="view-prefs" aria-labelledby="prefs-h" hidden>
+        <div class="view-inner wide">
+          <h1 class="vt" id="prefs-h" tabindex="-1" data-i18n="prefs_title">Reading preferences</h1>
+          <p class="lede">Changes apply straight away and are remembered on this device.</p>
+          <div class="prefs-grid">
+            <form class="prefs" id="prefs-form">
+              <fieldset>
+                <legend>Colour theme</legend>
+                <div class="swatches" id="theme-choices"></div>
+                <p class="hint">Automatic follows your computer: Paper by day, Night when it's set to dark. High contrast, below, replaces any theme's colours.</p>
+              </fieldset>
+              <div class="field">
+                <label for="p-font">Reading font</label>
+                <select id="p-font">
+                  <option value="serif">Book serif (Literata)</option>
+                  <option value="sans">Clean sans-serif (Figtree)</option>
+                  <option value="easy">Easier-reading font (Lexend)</option>
+                </select>
+                <p class="hint">Lexend has wider letter shapes and spacing. Many readers with dyslexia find it easier to read.</p>
+              </div>
+              <div class="field"><label for="p-size">Text size</label><div class="range-row"><input type="range" id="p-size" min="14" max="28" step="1"><output for="p-size" id="o-size"></output></div></div>
+              <div class="field"><label for="p-width">Reading width</label><div class="range-row"><input type="range" id="p-width" min="45" max="100" step="1"><output for="p-width" id="o-width"></output></div><p class="hint">Narrower lines are easier to follow. Wider lines fit more on screen.</p></div>
+              <div class="field"><label for="p-lh">Line spacing</label><div class="range-row"><input type="range" id="p-lh" min="1.3" max="2.2" step="0.05"><output for="p-lh" id="o-lh"></output></div></div>
+              <div class="field"><label for="p-zoom">Interface zoom</label><div class="range-row"><input type="range" id="p-zoom" min="80" max="150" step="10"><output for="p-zoom" id="o-zoom"></output></div><p class="hint">Makes menus, buttons and text larger or smaller together.</p></div>
+              <label class="switch"><input type="checkbox" id="p-contrast"><span><strong>High contrast</strong><span>Black and white with strong outlines.</span></span></label>
+              <label class="switch"><input type="checkbox" id="p-motion"><span><strong>Reduce motion</strong><span>Turns off scrolling and sliding animations. Your computer's own setting is always respected.</span></span></label>
+              <div class="field">
+                <label for="p-lang">Interface language</label>
+                <select id="p-lang"><option value="en">English</option><option value="es">Español</option><option value="de">Deutsch</option></select>
+                <p class="hint">In this prototype only the main menus and headings are translated. Your documents are never translated.</p>
+              </div>
+              <div><button class="btn" type="button" data-act="reset-prefs">Restore default settings</button></div>
+            </form>
+            <div class="preview-box" aria-label="Preview of your reading settings">
+              <p class="eyebrow">Preview</p>
+              <div class="doc preview-doc">
+                <h2>Public computers</h2>
+                <p>There are 12 computers on the first floor. Patrons sign in with their library card number and get <strong>two hours</strong> per day. Sessions can be extended if nobody is waiting.</p>
+                <p>Printing costs 10 cents per black-and-white page. Jobs wait in the print queue for 30 minutes before they're deleted. See the <a href="#">printing guide</a>.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen 6 -->
+      <section class="view" id="view-library" aria-labelledby="lib-h" hidden>
+        <div class="view-inner wide">
+          <h1 class="vt" id="lib-h" tabindex="-1" data-i18n="library_title">Library</h1>
+          <p class="lede">Everything you've read, starred, bookmarked and searched for, in one place.</p>
+          <div class="lib-tabs" role="tablist" aria-label="Library lists" id="lib-tabs"></div>
+          <div role="tabpanel" id="lib-panel" tabindex="-1">
+            <div class="lib-controls">
+              <div class="filter"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="lib-filter" type="search" aria-label="Filter this list" placeholder="Filter this list"></div>
+              <label>Sort by <select id="lib-sort">
+                <option value="recent">Most recent</option><option value="title">Title (A–Z)</option><option value="location">Location</option><option value="progress">Reading progress</option><option value="size">File size</option>
+              </select></label>
+              <span class="grow"></span>
+              <button class="btn sm" id="lib-clear" data-act="lib-clear" hidden>Clear this list</button>
+            </div>
+            <div id="lib-body"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen 7 -->
+      <section class="view" id="view-help" aria-labelledby="help-h" hidden>
+        <div class="view-inner wide">
+          <h1 class="vt" id="help-h" tabindex="-1" data-i18n="help_title">Privacy, security and help</h1>
+          <p class="lede">How Folio is designed to protect your documents, and what this prototype does and doesn't do yet.</p>
+          <div class="help-grid">
+            <div class="promise"><h3><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg>Read-only</h3><p>Folio opens documents for reading only. It never changes, moves or deletes your files.</p><p class="proto">Prototype: there is no way to edit files here at all.</p></div>
+            <div class="promise"><h3><svg class="i" aria-hidden="true"><use href="#i-upload-off"/></svg>Nothing is uploaded</h3><p>Your documents are read on your computer and are never sent anywhere.</p><p class="proto">Prototype: files you open are read inside this browser tab and are not sent anywhere.</p></div>
+            <div class="promise"><h3><svg class="i" aria-hidden="true"><use href="#i-eye-off"/></svg>No usage tracking</h3><p>Folio doesn't collect statistics about what you read or how you use it.</p><p class="proto">Prototype: no tracking code. It does download fonts and display libraries from public servers when the page first opens. The desktop app would include these.</p></div>
+            <div class="promise"><h3><svg class="i" aria-hidden="true"><use href="#i-offline"/></svg>Works offline</h3><p>Reading, searching and navigating don't need an internet connection.</p><p class="proto">Prototype: once loaded, everything except diagrams and fonts works without a connection.</p></div>
+          </div>
+
+          <section class="help-section" aria-labelledby="ext-h">
+            <h2 id="ext-h">Links to websites</h2>
+            <p>Links to other websites open in your usual web browser, never inside Folio. That keeps websites separate from your documents.</p>
+            <div class="radio-list" role="radiogroup" aria-labelledby="ext-h">
+              <label><input type="radio" name="ext" value="ask"><span>Ask before opening a website <small>Shows the full address first so you can check it. Recommended.</small></span></label>
+              <label><input type="radio" name="ext" value="direct"><span>Open websites straight away <small>Skips the question.</small></span></label>
+            </div>
+          </section>
+
+          <section class="help-section" aria-labelledby="img-h">
+            <h2 id="img-h">Pictures from the internet</h2>
+            <p>Some documents include pictures stored on other websites. Loading one tells that website that you're reading, and when. Folio hides these pictures until you say otherwise.</p>
+            <div class="radio-list" role="radiogroup" aria-labelledby="img-h">
+              <label><input type="radio" name="remote" value="ask"><span>Ask each time <small>A placeholder shows where the picture is. Choose to show it if you trust the source.</small></span></label>
+              <label><input type="radio" name="remote" value="block"><span>Never show pictures from the internet <small>Pictures stored with your documents still appear.</small></span></label>
+            </div>
+            <div class="btn-row"><button class="btn sm" data-act="open" data-key="sample/Guides/Introduction.md">See an example</button></div>
+          </section>
+
+          <section class="help-section" aria-labelledby="hist-h">
+            <h2 id="hist-h">History and reset</h2>
+            <p>Folio remembers recent documents, searches, reading progress and your open tabs on this device only.</p>
+            <div class="btn-row">
+              <button class="btn" data-act="clear-history"><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Clear history</button>
+              <button class="btn" data-act="reset-all"><svg class="i" aria-hidden="true"><use href="#i-restore"/></svg>Reset workspace</button>
+            </div>
+          </section>
+
+          <section class="help-section" aria-labelledby="cmp-h">
+            <h2 id="cmp-h">This prototype compared with the planned desktop app</h2>
+            <p>This prototype exists to test how reading feels. The security features below are simulated in the browser. None of them have been tested or certified for production use.</p>
+            <div class="table-scroll"><table class="cmp">
+              <thead><tr><th scope="col">Capability</th><th scope="col">Planned desktop app</th><th scope="col">This prototype</th></tr></thead>
+              <tbody>
+                <tr><td>Opening files and folders</td><td>Any folder you allow, remembered between sessions</td><td>Only files you pick in this tab; forgotten when the tab closes</td></tr>
+                <tr><td>Read-only access</td><td>Enforced by the app's file permissions</td><td>The prototype has no way to write files</td></tr>
+                <tr><td>File sandboxing</td><td>Planned, design not final</td><td>Not implemented; the browser's own protections apply</td></tr>
+                <tr><td>Remote pictures</td><td>Blocked until you allow them</td><td>Simulated: a local stand-in is shown, nothing is downloaded</td></tr>
+                <tr><td>Website links</td><td>Open in your default browser</td><td>Open in a new browser tab</td></tr>
+                <tr><td>Installation and updates</td><td>Installers for Windows, macOS and Linux</td><td>Not part of this phase</td></tr>
+                <tr><td>Security certification</td><td>To be decided</td><td>None. Nothing here should be read as a security guarantee</td></tr>
+              </tbody>
+            </table></div>
+          </section>
+
+          <section class="help-section" aria-labelledby="keys-h">
+            <h2 id="keys-h">Keyboard shortcuts</h2>
+            <dl class="shortcuts">
+              <dt><kbd>/</kbd> or <kbd>Ctrl</kbd> + <kbd>K</kbd></dt><dd>Search</dd>
+              <dt><kbd>Alt</kbd> + <kbd>←</kbd> / <kbd>→</kbd></dt><dd>Back and forward in the current tab</dd>
+              <dt><kbd>[</kbd> and <kbd>]</kbd></dt><dd>Show or hide the library panel and the contents panel</dd>
+              <dt><kbd>\</kbd></dt><dd>Read side by side, or go back to one page</dd>
+              <dt><kbd>Ctrl</kbd> + click a link</dt><dd>Open the page in a new tab</dd>
+              <dt><kbd>Shift</kbd> + click a link</dt><dd>Open the page beside the current one</dd>
+              <dt><kbd>←</kbd> / <kbd>→</kbd> on a tab</dt><dd>Move between open tabs</dd>
+              <dt><kbd>Esc</kbd></dt><dd>Close a dialog, menu or search highlights</dd>
+            </dl>
+          </section>
+
+          <section class="help-section faq" aria-labelledby="faq-h">
+            <h2 id="faq-h">Common questions</h2>
+            <details><summary>What kind of documents can Folio open?</summary><p>Plain-text documents written in Markdown, a simple way of adding headings, lists and links to text. Their names usually end in .md. You don't need to know Markdown to read them; Folio shows them formatted.</p></details>
+            <details><summary>Why is a link shown in red with a dotted underline?</summary><p>It points to a page that isn't in this collection. The page may have been renamed, moved or not written yet. Selecting it explains what's missing.</p></details>
+            <details><summary>Why does Folio ask before showing some pictures?</summary><p>Those pictures are stored on other websites. Showing them would tell those websites that you're reading the document. You decide whether that's acceptable.</p></details>
+            <details><summary>Can I edit my documents in Folio?</summary><p>No. Folio is a reader. Keeping it read-only means it can never damage your files.</p></details>
+            <details><summary>Where are my favorites and bookmarks stored?</summary><p>On this device only, in this browser. Clearing your browser data removes them. Use "Clear history" or "Reset workspace" above to remove them yourself.</p></details>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <aside class="toc" id="toc" aria-labelledby="toc-h">
+      <div class="toc-head">
+        <h2 id="toc-h" data-i18n="contents">On this page</h2>
+        <div class="toc-tools">
+          <button class="icon-btn sm" data-act="toc-all" data-open="1" aria-label="Expand all sections" title="Expand all"><svg class="i" aria-hidden="true"><use href="#i-chev-down"/></svg></button>
+          <button class="icon-btn sm" data-act="toc-all" data-open="0" aria-label="Collapse all sections" title="Collapse all"><svg class="i" aria-hidden="true"><use href="#i-chev-up"/></svg></button>
+        </div>
+      </div>
+      <p class="toc-doc" id="toc-doc"></p>
+      <nav id="toc-body" aria-label="Sections"></nav>
+    </aside>
+  </div>
+</div>
+
+<dialog id="dlg" aria-labelledby="dlg-title">
+  <div class="dlg-head"><h2 id="dlg-title"></h2><button class="icon-btn sm" data-dlg-close aria-label="Close"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+  <div class="dlg-body" id="dlg-body"></div>
+  <div class="dlg-actions" id="dlg-actions"></div>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="file-input" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple hidden>
+<input type="file" id="folder-input" webkitdirectory multiple hidden>
+
+<!-- ===================== Sample collection: My-Knowledge-Base ===================== -->
+<script type="text/markdown" data-col="sample" data-path="README.md" data-modified="2026-10-14">
+---
+title: Welcome to the Library Handbook
+author: Digital Services Team
+updated: 2026-10-14
+tags: [handbook, start-here]
+status: Current
+---
+
+# Welcome to the Library Handbook
+
+This handbook explains how Elm Street Community Library runs its digital services: the public computers, the Wi-Fi, e-book lending and the online catalogue. It is written for staff and volunteers. You don't need any technical knowledge to use it.
+
+> [!TIP]
+> New here? Read [Getting Started](Getting-Started.md) first. It takes about five minutes.
+
+## What's inside
+
+| Section | What you'll find | Start with |
+|---|---|---|
+| Guides | Everyday tasks and answers for patrons | [[Introduction]] |
+| Technical | How our systems fit together | [[Architecture]] |
+| References | Plain-language definitions | [[Glossary]] |
+
+## How the handbook is organised
+
+Each page covers one topic. Pages link to each other, so you can follow a question from the front desk all the way to the system that answers it.
+
+For example, if a patron can't borrow an e-book, start with [Troubleshooting](Guides/Troubleshooting.md#e-book-loans). If you want to understand why it happened, look at the [loan diagram](Technical/Diagrams.md#how-an-e-book-loan-works).
+
+### Who looks after which page
+
+| Page | Owner | Last reviewed |
+|---|---|---|
+| Getting Started | Priya Raman | October 2026 |
+| Security and Privacy | Tomás Ortega | October 2026 |
+| Troubleshooting | Front-desk team | September 2026 |
+| System Architecture | Digital Services Team | August 2026 |
+
+If you spot something out of date, tell the page owner. Small fixes are welcome at any time.
+
+## Keeping the handbook current
+
+- [x] Review the security guide (October)
+- [x] Update the Wi-Fi troubleshooting steps
+- [ ] Add photos of the new self-checkout kiosk
+- [ ] Translate Getting Started into Spanish
+
+## Contact
+
+Bring questions to the digital services desk on the first floor, or visit the [library website](https://www.example.org/library).
+</script>
+
+<script type="text/markdown" data-col="sample" data-path="Getting-Started.md" data-modified="2026-10-10">
+---
+title: Getting Started
+author: Priya Raman
+updated: 2026-10-10
+tags: [onboarding]
+status: Current
+---
+
+# Getting Started
+
+Welcome to the team. This page shows how to find your way around the handbook and what the coloured boxes on each page mean.
+
+## Finding a page
+
+There are three ways to find what you need:
+
+1. **Browse** the folders on the left. *Guides* holds everyday tasks; *Technical* explains the systems behind them.
+2. **Search** with the box at the top of the window. Search looks inside every page, including section headings.
+3. **Follow links** inside a page. A link to another page in this handbook opens right here. A link to a website opens in your web browser.
+
+## Reading tips
+
+- Use the **On this page** list on the right to jump between sections.
+- Open two pages side by side when you need to compare them, such as the [[Security]] guide and the [[Troubleshooting]] guide.
+- Star the pages you use every day. They appear under *Favorites*.
+- Bookmark a section you'll come back to, such as the printing price list.
+
+## What the coloured boxes mean
+
+> [!NOTE]
+> A note adds useful background. You can skip it if you're in a hurry.
+
+> [!TIP]
+> A tip shows a quicker or easier way to do something.
+
+> [!IMPORTANT]
+> Important information you need to complete a task correctly.
+
+> [!WARNING]
+> A warning means something could go wrong for a patron, such as losing unsaved work.
+
+> [!CAUTION]
+> Caution marks actions that can't be undone. Ask a supervisor first.
+
+## Your first week
+
+| Day | What to read | Time |
+|---|---|---|
+| Monday | [[Introduction]] | 10 minutes |
+| Tuesday | [[Security]] | 15 minutes |
+| Wednesday | [[Troubleshooting]] | 15 minutes |
+| Thursday | [[Glossary]] | 5 minutes |
+| Friday | Shadow a colleague at the desk | 2 hours |
+
+When you've finished, you're ready to help patrons at the digital services desk.
+
+## Getting help
+
+Your first-week buddy is listed on the staff noticeboard. You can also ask anyone on the Digital Services Team.
+</script>
+
+<script type="text/markdown" data-col="sample" data-path="Guides/Introduction.md" data-modified="2026-09-28">
+---
+title: Introduction to Digital Services
+author: Digital Services Team
+updated: 2026-09-28
+tags: [guides, services]
+status: Current
+---
+
+# Introduction to Digital Services
+
+Elm Street Library offers four digital services. Almost every patron question at the desk is about one of them.
+
+![The first-floor reading room, with the public computers along the window](https://images.example.org/elm-street/reading-room.jpg)
+
+## Public computers
+
+There are 12 computers on the first floor. Patrons sign in with their library card number and get **two hours** per day. Sessions can be extended if nobody is waiting.
+
+### Printing from a public computer
+
+Printing costs 10 cents per black-and-white page and 50 cents per colour page. Jobs wait in the print queue for 30 minutes before they're deleted.
+
+#### Paying for printing
+
+Patrons pay at the self-service kiosk next to the printer, with coins, a bank card or their library account balance.
+
+#### Printing from a phone
+
+Patrons can email a document to the printer's address, shown on the poster above it. The job appears in the queue under their email address.
+
+## Wi-Fi
+
+The network is called **ElmStreet-Public**. It doesn't need a password, but patrons must accept the terms on the welcome page. Staff use a separate network; see the [[Security]] guide.
+
+## E-book and audiobook lending
+
+Patrons can borrow up to **10 e-books** and **5 audiobooks** at once, for 21 days. Popular titles have a waiting list. The [loan diagram](../Technical/Diagrams.md#how-an-e-book-loan-works) shows each step.
+
+## Online catalogue
+
+The catalogue lists everything the library owns, including items at the two branch libraries. Patrons can place holds and renew loans online.
+
+## Opening hours of the digital services desk
+
+| Day | Hours | Staffed by |
+|---|---|---|
+| Monday to Thursday | 9:00 to 20:00 | Two staff members |
+| Friday | 9:00 to 18:00 | One staff member |
+| Saturday | 10:00 to 16:00 | Volunteers |
+| Sunday | Closed | Nobody |
+
+Next, read the [Security guide](Security.md).
+</script>
+
+<script type="text/markdown" data-col="sample" data-path="Guides/Security.md" data-modified="2026-10-12">
+---
+title: Security and Privacy
+author: Tomás Ortega
+updated: 2026-10-12
+tags: [security, privacy]
+status: Reviewed
+---
+
+# Security and Privacy
+
+Patrons trust us with their reading history, their contact details and sometimes their documents. This guide explains how we protect that information.
+
+> [!IMPORTANT]
+> Never write down a patron's library card number or PIN, even on a sticky note.
+
+## Patron privacy
+
+We keep only the information needed to lend items:
+
+- Name and contact details
+- Current loans and holds
+- Fines owed
+
+Reading history is **not** kept after an item is returned, unless the patron turns it on in their account.
+
+## Passwords and staff accounts
+
+Every staff member has their own account. Shared accounts are not allowed.
+
+1. Use a passphrase of at least four random words.
+2. Turn on two-step sign-in.
+3. Lock your screen whenever you leave the desk (press <kbd>Windows</kbd> + <kbd>L</kbd>).
+
+## Public computer reset
+
+Every public computer erases its own files when a session ends. The reset is controlled by a small settings file:
+
+```yaml
+# session-reset.yaml: applied at every sign-out
+erase:
+  downloads: true
+  browser_history: true
+  saved_passwords: true
+keep:
+  printer_settings: true
+idle_timeout_minutes: 10
+```
+
+> [!WARNING]
+> Files saved to a public computer are erased at sign-out. Remind patrons to use a USB drive or email the file to themselves.
+
+## Remote images
+
+Some documents show pictures stored on other websites. Loading such a picture tells that website who is reading. Our reading software asks before it loads a remote picture, and you can say no.
+
+## Links to other websites
+
+Links to other websites open in your normal web browser, not inside the handbook. Before you click, check that the address looks right, for example `https://www.example.org/library`.
+
+## Reporting a problem
+
+If you think a patron's information has been exposed, tell the duty manager straight away and write down what happened. Then follow the [Troubleshooting](Troubleshooting.md) guide to secure the computer.
+
+> [!CAUTION]
+> Don't try to recover deleted files yourself. You could overwrite evidence.
+</script>
+
+<script type="text/markdown" data-col="sample" data-path="Guides/Troubleshooting.md" data-modified="2026-09-19">
+---
+title: Troubleshooting
+author: Front-desk team
+updated: 2026-09-19
+tags: [guides, help]
+status: Needs review
+---
+
+# Troubleshooting
+
+Start with the problem the patron describes. Each section lists the most likely cause first.
+
+## Wi-Fi won't connect
+
+1. Check that the patron chose **ElmStreet-Public**, not a nearby network.
+2. Ask them to open any website. The welcome page should appear; they must tap **Accept**.
+3. If nothing happens, turn Wi-Fi off and on again on their device.
+4. Still stuck? Restart the access point in the reading room. The full steps are in the [Network Setup guide](Network-Setup.md).
+
+> [!NOTE]
+> The Network Setup guide hasn't been written yet. Ask a supervisor until it's ready.
+
+## Printing problems
+
+| What the patron sees | Likely cause | What to do |
+|---|---|---|
+| "Job held" | Not paid yet | Send them to the kiosk |
+| Nothing prints | Wrong printer chosen | Reprint to **Elm-Floor1** |
+| Pages come out blank | Toner is low | Swap the cartridge (see the [[Printer Manual]]) |
+| Pages are cut off | Wrong paper size | Choose **A4** in the print window |
+
+## E-book loans
+
+Most e-book problems happen because the patron's account and the e-book app are out of sync.
+
+### "You have reached your loan limit"
+
+The patron already has 10 e-books. Ask them to return one early from the app.
+
+### "This title is not available"
+
+Every copy is on loan. Offer to place a hold. The [[Glossary]] explains how holds work.
+
+### The book downloaded but won't open
+
+Ask the patron to sign out of the app and sign in again. This refreshes the licence.
+
+## Public computer is frozen
+
+Hold the power button for five seconds. The computer restarts and erases the session, as described in [Security](Security.md#public-computer-reset).
+
+## Still not solved?
+
+Write down what the patron saw, the time and the computer number, then pass it to the Digital Services Team.
+</script>
+
+<script type="text/markdown" data-col="sample" data-path="Technical/Architecture.md" data-modified="2026-08-30">
+---
+title: System Architecture
+author: Digital Services Team
+updated: 2026-08-30
+tags: [technical, systems]
+status: Current
+---
+
+# System Architecture
+
+This page describes the systems behind our digital services and how they connect. It's useful background when a problem affects more than one service.
+
+![Diagram of the library systems: patron devices connect through Wi-Fi to the catalogue server, which talks to the e-book provider](../Images/architecture.png)
+
+## Components
+
+| Component | What it does | Where it runs |
+|---|---|---|
+| Catalogue server | Records every item, loan and hold | Library server room |
+| E-book provider | Supplies e-book and audiobook licences | Provider's data centre |
+| Session manager | Signs patrons in and resets public computers | Library server room |
+| Print server | Holds print jobs until they're paid | Library server room |
+
+## How the parts connect
+
+Patron devices reach the catalogue through the public Wi-Fi. The catalogue checks loan limits before it asks the e-book provider for a licence. See [[Diagrams]] for step-by-step pictures.
+
+### Catalogue server
+
+The catalogue server answers about 40,000 requests on a busy day. It is backed up every night at 02:00.
+
+### Session manager
+
+The session manager reads its settings from the reset file described in [Security](../Guides/Security.md#public-computer-reset).
+
+## Example catalogue record
+
+Each item in the catalogue is stored as a record like this:
+
+```json
+{
+  "id": "b2049381",
+  "title": "The Secret Garden",
+  "format": "e-book",
+  "copies": 3,
+  "on_loan": 3,
+  "holds": 5
+}
+```
+
+## Planning storage
+
+We estimate the backup storage needed for loan history with this formula:
+
+$$
+S = n \times \bar{r} \times d
+$$
+
+where $n$ is the number of active patrons, $\bar{r}$ is the average record size and $d$ is the number of days we keep backups. With $n = 8200$, $\bar{r} = 2\,\text{KB}$ and $d = 30$, we need about 492 MB.
+
+Terms used on this page are defined in the [Glossary](../References/Glossary.md).
+</script>
+
+<script type="text/markdown" data-col="sample" data-path="Technical/Diagrams.md" data-modified="2026-08-30">
+---
+title: Diagrams
+author: Digital Services Team
+updated: 2026-08-30
+tags: [technical, diagrams]
+status: Current
+---
+
+# Diagrams
+
+Pictures of the most common processes. Each diagram is drawn from a short text description, so it's easy to keep up to date.
+
+## How an e-book loan works
+
+```mermaid
+%% Steps a patron goes through to borrow an e-book
+flowchart TD
+  A[Patron chooses a title] --> B{Copy available?}
+  B -- Yes --> C[Catalogue checks loan limit]
+  B -- No --> H[Place a hold]
+  C -- Under limit --> D[Provider issues licence]
+  C -- At limit --> E[Ask patron to return a title]
+  D --> F[Book appears in the app]
+```
+
+## Self-checkout conversation
+
+```mermaid
+%% Messages exchanged when a patron uses the self-checkout kiosk
+sequenceDiagram
+  participant P as Patron
+  participant K as Kiosk
+  participant C as Catalogue
+  P->>K: Scans library card
+  K->>C: Is this card valid?
+  C-->>K: Yes, 2 loans, no fines
+  P->>K: Scans book
+  K->>C: Record loan
+  C-->>K: Due 23 November
+  K-->>P: Prints receipt
+```
+
+## Daily opening routine
+
+![The daily opening routine: switch on computers, check printers, start the session manager, open the desk](../Images/workflow.png)
+
+## Estimating hold waiting times
+
+When all copies are on loan, the expected wait for a hold is roughly
+
+$$
+W \approx \frac{q}{c} \times L
+$$
+
+where $q$ is the patron's place in the queue, $c$ is the number of copies and $L$ is the loan period in days. Fifth in line for a title with 3 copies and a 21-day loan means waiting about 35 days.
+</script>
+
+<script type="text/markdown" data-col="sample" data-path="References/Glossary.md" data-modified="2026-07-15">
+---
+title: Glossary
+author: Priya Raman
+updated: 2026-07-15
+tags: [reference]
+status: Current
+---
+
+# Glossary
+
+Plain-language definitions of the terms used in this handbook.
+
+## A to E
+
+### Access point
+
+The small box on the ceiling that sends out the Wi-Fi signal. See [[Troubleshooting#Wi-Fi won't connect|Wi-Fi troubleshooting]].
+
+### Catalogue
+
+The list of everything the library owns, across all three buildings. See [[Architecture]].
+
+### E-book licence
+
+Permission from the provider to lend one copy of an e-book to one patron at a time.
+
+## H to P
+
+### Hold
+
+A reservation for an item that's on loan to someone else. Patrons get a message when it's ready to collect.
+
+### Loan limit
+
+The most items a patron can borrow at once: 10 e-books and 5 audiobooks.
+
+### Passphrase
+
+A password made of several random words. It's easier to remember and harder to guess. See [[Security]].
+
+## R to Z
+
+### Remote image
+
+A picture stored on another website rather than with the document. The reading software asks before showing one. See [Security](../Guides/Security.md#remote-images).
+
+### Session
+
+The time a patron spends signed in to a public computer. It ends after two hours or 10 minutes without activity.
+</script>
+
+<!-- ===================== Sample collection: Reading-Notes ===================== -->
+<script type="text/markdown" data-col="notes" data-path="Index.md" data-modified="2026-10-30">
+---
+title: Reading Notes
+updated: 2026-10-30
+tags: [personal]
+---
+
+# Reading Notes
+
+A small personal collection, kept separate from the library handbook.
+
+- [[Slow Reading]]: notes on reading with attention
+- [[Book Club Schedule]]: what the book club is reading this season
+</script>
+
+<script type="text/markdown" data-col="notes" data-path="Notes/Slow-Reading.md" data-modified="2026-10-21">
+# Slow Reading
+
+## Why slow down
+
+Reading more slowly helps you notice how a text is built: where an argument turns, which examples carry the weight, and what the author leaves out.
+
+## Three habits
+
+1. **Skim the headings first.** Build a map before you walk the ground.
+2. **Stop at the end of each section** and say in one sentence what it was about.
+3. **Write one question** you'd ask the author.
+
+## Related
+
+Back to the [index](../Index.md).
+</script>
+
+<script type="text/markdown" data-col="notes" data-path="Notes/Book-Club-Schedule.md" data-modified="2026-10-30">
+# Book Club Schedule
+
+| Month | Book | Host |
+|---|---|---|
+| November | *The Secret Garden* | Amal |
+| December | *A Christmas Carol* | Jonas |
+| January | *Middlemarch*, part one | Wen |
+
+We meet on the second Thursday of each month at 19:00 in the community room.
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.1.6/purify.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.11/katex.min.js"></script>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"></script>
+<script>
+'use strict';
+/* ================= Helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const h = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const icon = (n, cls = '') => `<svg class="i ${cls}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+const ib = (act, ic, label, extra = '') => `<button class="icon-btn sm" data-act="${act}" aria-label="${h(label)}" title="${h(label)}" ${extra}>${icon(ic)}</button>`;
+const basename = p => p.split('/').pop();
+const dirname = p => p.includes('/') ? p.slice(0, p.lastIndexOf('/')) : '';
+const friendly = p => basename(p).replace(/\.(md|markdown|txt)$/i, '').replace(/[-_]+/g, ' ');
+const escapeRe = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const fmtSize = b => b < 1024 ? `${b} bytes` : `${(b / 1024).toFixed(1)} KB`;
+const fmtDate = d => { if (!d) return 'Unknown'; try { return new Date(String(d).length === 10 ? d + 'T12:00:00' : d).toLocaleDateString(S.prefs.lang, { day: 'numeric', month: 'short', year: 'numeric' }); } catch { return d; } };
+const ago = ts => { const m = Math.round((Date.now() - ts) / 60000); if (m < 1) return 'just now'; if (m < 60) return `${m} min ago`; if (m < 1440) return `${Math.round(m / 60)} h ago`; return fmtDate(new Date(ts).toISOString()); };
+const reduced = () => S.prefs.motion === 'reduce' || matchMedia('(prefers-reduced-motion: reduce)').matches;
+// [id, name, base mode, preview: page, text, accent]
+const THEMES = [
+  ['system', 'Automatic', null, 'linear-gradient(135deg, #FFFFFF 50%, #181C19 50%)', '#7F8A83', '#2E6A54'],
+  ['light', 'Paper', 'light', '#FFFFFF', '#1C211E', '#2E6A54'],
+  ['sepia', 'Sepia', 'light', '#FBF5E9', '#3B2F22', '#8A4B22'],
+  ['slate', 'Slate', 'light', '#FFFFFF', '#1A2230', '#2457A6'],
+  ['rose', 'Rose', 'light', '#FFFFFF', '#2A1F22', '#9C3554'],
+  ['dark', 'Night', 'dark', '#181C19', '#E3E7E2', '#7BC3A5'],
+  ['dusk', 'Dusk', 'dark', '#161D2D', '#E2E7F0', '#8FB4FF'],
+  ['ember', 'Ember', 'dark', '#1C1815', '#ECE4DA', '#E8A75A'],
+];
+const themeOf = id => THEMES.find(x => x[0] === id) || THEMES[1];
+const isDark = () => { const base = themeOf(S.prefs.theme)[2]; return base ? base === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches; };
+const swatch = ([id, name, , b, c, a], radio) => `<${radio ? 'label' : 'button'} class="swatch" ${radio ? '' : `data-act="theme" data-theme-val="${id}" aria-pressed="false"`}>${radio ? `<input type="radio" name="theme" value="${id}">` : ''}<span class="sw-chip" style="--b:${b};--c:${c};--a:${a}" aria-hidden="true"></span>${name}</${radio ? 'label' : 'button'}>`;
+const narrow = w => matchMedia(`(max-width: ${w}px)`).matches;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('folio.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('folio.' + k, JSON.stringify(v)); } catch { /* storage unavailable: settings last for this visit only */ } },
+  clear() { try { Object.keys(localStorage).filter(k => k.startsWith('folio.')).forEach(k => localStorage.removeItem(k)); } catch { } },
+};
+
+/* ================= Sample images (drawn as vector stand-ins for the .png files) ================= */
+const TXT = 'font-family="Figtree, Segoe UI, sans-serif"';
+const SAMPLE_IMAGES = {
+  'Images/architecture.png': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330"><rect width="720" height="330" rx="12" fill="#F3F5F0"/><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#4A524C"/></marker></defs><g ${TXT} font-size="14" fill="#1C211E" text-anchor="middle"><rect x="24" y="120" width="140" height="70" rx="10" fill="#FFFFFF" stroke="#9AA39C"/><text x="94" y="150" font-weight="600">Patron devices</text><text x="94" y="170" font-size="12" fill="#4A524C">laptops, phones</text><rect x="214" y="120" width="120" height="70" rx="10" fill="#FFFFFF" stroke="#9AA39C"/><text x="274" y="160" font-weight="600">Public Wi-Fi</text><rect x="384" y="105" width="150" height="100" rx="10" fill="#DFEBE4" stroke="#2E6A54"/><text x="459" y="150" font-weight="600">Catalogue</text><text x="459" y="170" font-weight="600">server</text><rect x="574" y="30" width="126" height="70" rx="10" fill="#FFFFFF" stroke="#9AA39C"/><text x="637" y="62" font-weight="600">E-book</text><text x="637" y="80" font-weight="600">provider</text><rect x="574" y="230" width="126" height="70" rx="10" fill="#FFFFFF" stroke="#9AA39C"/><text x="637" y="262" font-weight="600">Session</text><text x="637" y="280" font-weight="600">manager</text><rect x="384" y="245" width="150" height="56" rx="10" fill="#FFFFFF" stroke="#9AA39C"/><text x="459" y="278" font-weight="600">Print server</text></g><g stroke="#4A524C" stroke-width="2" fill="none" marker-end="url(#a)"><path d="M164 155H210"/><path d="M334 155H380"/><path d="M534 130L572 80"/><path d="M534 180L572 248"/><path d="M459 205V241"/></g><text x="24" y="40" ${TXT} font-size="16" font-weight="700" fill="#1C211E">Elm Street Library systems</text><text x="24" y="62" ${TXT} font-size="12" fill="#4A524C">Server room and outside services</text></svg>`,
+  'Images/workflow.png': `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 190"><rect width="720" height="190" rx="12" fill="#F3F5F0"/><g ${TXT} text-anchor="middle" fill="#1C211E"><g stroke="#2E6A54" stroke-width="2"><path d="M130 95H230M310 95H410M490 95H590"/></g><circle cx="90" cy="95" r="38" fill="#FFFFFF" stroke="#2E6A54" stroke-width="2"/><circle cx="270" cy="95" r="38" fill="#FFFFFF" stroke="#2E6A54" stroke-width="2"/><circle cx="450" cy="95" r="38" fill="#FFFFFF" stroke="#2E6A54" stroke-width="2"/><circle cx="630" cy="95" r="38" fill="#2E6A54"/><text x="90" y="101" font-size="18" font-weight="700">8:30</text><text x="270" y="101" font-size="18" font-weight="700">8:40</text><text x="450" y="101" font-size="18" font-weight="700">8:50</text><text x="630" y="101" font-size="18" font-weight="700" fill="#FFFFFF">9:00</text><g font-size="13"><text x="90" y="160">Switch on computers</text><text x="270" y="160">Check printers</text><text x="450" y="160">Start session manager</text><text x="630" y="160">Open the desk</text></g><text x="360" y="30" font-size="14" font-weight="700">Daily opening routine</text></g></svg>`,
+};
+const STAND_IN = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 300"><rect width="720" height="300" fill="#E8EEF2"/><rect x="40" y="30" width="640" height="150" fill="#CFE0EA"/><g fill="#B7CEDC"><rect x="40" y="30" width="200" height="150"/><rect x="480" y="30" width="200" height="150"/></g><g stroke="#FFFFFF" stroke-width="6"><path d="M253 30V180M466 30V180M40 105H680"/></g><rect x="0" y="180" width="720" height="120" fill="#C9B79C"/><g fill="#8C6E4E"><rect x="60" y="196" width="180" height="12"/><rect x="290" y="196" width="180" height="12"/><rect x="520" y="196" width="160" height="12"/></g><g fill="#2E3A40"><rect x="90" y="150" width="50" height="40" rx="3"/><rect x="160" y="150" width="50" height="40" rx="3"/><rect x="320" y="150" width="50" height="40" rx="3"/><rect x="390" y="150" width="50" height="40" rx="3"/><rect x="550" y="150" width="50" height="40" rx="3"/></g><text x="360" y="268" font-family="sans-serif" font-size="15" text-anchor="middle" fill="#3B3226">Prototype stand-in picture</text></svg>`);
+
+/* ================= Collections & workspaces ================= */
+const collections = {};
+const workspaces = [
+  { id: 'personal', name: 'Personal', cols: ['sample', 'notes'] },
+  { id: 'team', name: 'Team handbook', cols: [] },
+];
+function loadSamples() {
+  const names = { sample: 'My-Knowledge-Base', notes: 'Reading-Notes' };
+  for (const s of $$('script[type="text/markdown"]')) {
+    const cid = s.dataset.col;
+    const c = collections[cid] ||= { id: cid, name: names[cid], files: {}, persist: true };
+    const text = s.textContent.replace(/^\r?\n/, '').replace(/\s+$/, '\n');
+    c.files[s.dataset.path] = { path: s.dataset.path, type: 'md', text, size: new Blob([text]).size, modified: s.dataset.modified };
+  }
+  for (const [p, svg] of Object.entries(SAMPLE_IMAGES))
+    collections.sample.files[p] = { path: p, type: 'img', url: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg), size: svg.length, modified: '2026-08-30' };
+}
+const keyOf = (cid, path) => cid + '/' + path;
+const parseKey = k => { const i = k.indexOf('/'); return { cid: k.slice(0, i), path: k.slice(i + 1) }; };
+const fileOf = k => { if (!k) return null; const { cid, path } = parseKey(k); return collections[cid]?.files[path] || null; };
+const curWs = () => workspaces.find(w => w.id === S.ws) || workspaces[0];
+const wsOf = cid => workspaces.find(w => w.cols.includes(cid));
+const docKeys = cids => cids.flatMap(cid => Object.values(collections[cid]?.files || {}).filter(f => f.type === 'md').map(f => keyOf(cid, f.path)));
+const wsDocKeys = () => docKeys(curWs().cols);
+
+function resolvePath(from, rel) {
+  const parts = rel.startsWith('/') ? [] : dirname(from).split('/').filter(Boolean);
+  for (const seg of rel.split('/')) { if (!seg || seg === '.') continue; if (seg === '..') parts.pop(); else parts.push(seg); }
+  return parts.join('/');
+}
+const norm = s => s.toLowerCase().replace(/\.(md|markdown)$/, '').replace(/[-_\s]+/g, ' ').trim();
+function resolveWiki(cid, name) {
+  const n = norm(name), files = collections[cid]?.files || {};
+  for (const p in files) if (files[p].type === 'md' && (norm(basename(p)) === n || norm(p) === n)) return p;
+  for (const p in files) if (files[p].type === 'md' && norm(meta(keyOf(cid, p)).title) === n) return p;
+  return null;
+}
+
+/* ================= Document parsing ================= */
+function splitFrontmatter(text) {
+  const m = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/.exec(text);
+  if (!m) return { fm: {}, body: text };
+  const fm = {};
+  for (const line of m[1].split(/\r?\n/)) {
+    const mm = /^([A-Za-z0-9_-]+):\s*(.*)$/.exec(line);
+    if (!mm) continue;
+    let v = mm[2].trim();
+    v = /^\[.*\]$/.test(v) ? v.slice(1, -1).split(',').map(x => x.trim().replace(/^["']|["']$/g, '')).filter(Boolean) : v.replace(/^["']|["']$/g, '');
+    fm[mm[1]] = v;
+  }
+  return { fm, body: text.slice(m[0].length) };
+}
+const stripInline = s => s.replace(/!\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2').replace(/\[\[([^\]]+)\]\]/g, '$1')
+  .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').replace(/<[^>]+>/g, '').replace(/[*_`~]/g, '').replace(/\$([^$]+)\$/g, '$1').trim();
+const slugify = t => t.toLowerCase().trim().replace(/[^\p{L}\p{N}\s-]/gu, '').replace(/\s+/g, '-');
+function sectionize(body) {
+  const out = [{ slug: '', heading: '', level: 0, lines: [] }], counts = {};
+  let fence = null;
+  for (const line of body.split(/\r?\n/)) {
+    const f = /^\s*(```|~~~)/.exec(line);
+    if (f) { fence = fence ? (line.trim().startsWith(fence) ? null : fence) : f[1]; out.at(-1).lines.push(line); continue; }
+    const hm = !fence && /^(#{1,6})\s+(.+?)\s*#*\s*$/.exec(line);
+    if (hm) {
+      const heading = stripInline(hm[2]);
+      let slug = slugify(heading); const n = counts[slug] = (counts[slug] ?? -1) + 1; if (n) slug += '-' + n;
+      out.push({ slug, heading, level: hm[1].length, lines: [] });
+    } else out.at(-1).lines.push(line);
+  }
+  return out.map(s => ({ ...s, text: stripInline(s.lines.join(' ').replace(/\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]/gi, '').replace(/^\s*[>|#-]+/gm, ' ').replace(/[|>]/g, ' ').replace(/\s+/g, ' ')) }))
+    .filter(s => s.level || s.text.trim());
+}
+const metaCache = new Map();
+function meta(k) {
+  if (metaCache.has(k)) return metaCache.get(k);
+  const f = fileOf(k); if (!f) return null;
+  const { cid, path } = parseKey(k);
+  let m;
+  if (f.type === 'img') m = { title: basename(path), fm: {}, body: '', sections: [], words: 0, isImg: true };
+  else {
+    const { fm, body } = splitFrontmatter(f.text), sections = sectionize(body), h1 = sections.find(s => s.level === 1);
+    m = { title: fm.title || h1?.heading || friendly(path), fm, body, sections, words: (body.match(/\S+/g) || []).length };
+  }
+  Object.assign(m, { key: k, cid, path, folder: dirname(path) });
+  metaCache.set(k, m);
+  return m;
+}
+
+/* ================= Markdown rendering ================= */
+if (window.marked) marked.use({
+  gfm: true,
+  extensions: [
+    { name: 'wiki', level: 'inline', start: src => { const i = src.indexOf('[['); return i < 0 ? undefined : i; },
+      tokenizer(src) { const m = /^\[\[([^\]|\n]+)(?:\|([^\]\n]+))?\]\]/.exec(src); if (m) return { type: 'wiki', raw: m[0], target: m[1].trim(), label: (m[2] || m[1]).trim() }; },
+      renderer: t => `<a href="#" data-wiki="${h(t.target)}">${h(t.label)}</a>` },
+    { name: 'mathBlock', level: 'block', start: src => { const i = src.indexOf('$$'); return i < 0 ? undefined : i; },
+      tokenizer(src) { const m = /^\$\$[^\S\n]*\n?([\s\S]+?)\n?[^\S\n]*\$\$[^\S\n]*(?:\n+|$)/.exec(src); if (m) return { type: 'mathBlock', raw: m[0], text: m[1].trim() }; },
+      renderer: t => `<div class="math math-block" data-tex="${h(t.text)}">${h(t.text)}</div>` },
+    { name: 'mathInline', level: 'inline', start: src => { const i = src.indexOf('$'); return i < 0 ? undefined : i; },
+      tokenizer(src) { const m = /^\$(?!\s)([^$\n]+?)(?<!\s)\$(?!\d)/.exec(src); if (m) return { type: 'mathInline', raw: m[0], text: m[1] }; },
+      renderer: t => `<span class="math" data-tex="${h(t.text)}">${h(t.text)}</span>` },
+  ],
+});
+const ADMON = { note: ['info', 'Note'], tip: ['star', 'Tip'], important: ['alert', 'Important'], warning: ['alert', 'Warning'], caution: ['alert', 'Caution'] };
+
+function renderDoc(k) {
+  const art = document.createElement('article');
+  art.className = 'doc';
+  const f = fileOf(k), m = meta(k);
+  if (!f) { art.innerHTML = '<h1>Document not available</h1><p>This document is no longer open. Files opened from your computer are forgotten when the tab closes.</p>'; return art; }
+  if (f.type === 'img') { art.innerHTML = `<h1>${h(m.title)}</h1><figure class="img-view"><img src="${f.url}" alt="${h(m.title)}"><figcaption>Image file in ${h(collections[m.cid].name)} · ${fmtSize(f.size)}</figcaption></figure>`; return art; }
+  if (window.marked && window.DOMPurify) art.innerHTML = DOMPurify.sanitize(marked.parse(m.body));
+  else art.innerHTML = `<aside class="callout callout-warning"><p class="callout-title">${icon('alert')} Showing plain text</p><p>The formatting engine couldn't load, probably because you're offline. The document is shown as plain text.</p></aside><pre style="white-space:pre-wrap">${h(m.body)}</pre>`;
+  enhance(art, m);
+  return art;
+}
+
+function enhance(art, m) {
+  const { cid, path } = m;
+  // Admonitions (GitHub style: > [!NOTE])
+  for (const bq of $$('blockquote', art)) {
+    const p = bq.firstElementChild;
+    const mm = p?.tagName === 'P' && /^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i.exec(p.innerHTML);
+    if (!mm) continue;
+    const type = mm[1].toLowerCase();
+    p.innerHTML = p.innerHTML.slice(mm[0].length);
+    if (!p.innerHTML.trim()) p.remove();
+    const box = document.createElement('aside');
+    box.className = 'callout callout-' + type;
+    box.setAttribute('role', 'note');
+    box.innerHTML = `<p class="callout-title">${icon(ADMON[type][0])}${ADMON[type][1]}</p>`;
+    box.append(...bq.childNodes);
+    bq.replaceWith(box);
+  }
+  // Headings get stable slugs matching the search index
+  const counts = {};
+  for (const el of $$('h1,h2,h3,h4,h5,h6', art)) {
+    let s = slugify(el.textContent); const n = counts[s] = (counts[s] ?? -1) + 1; if (n) s += '-' + n;
+    el.dataset.slug = s; el.tabIndex = -1;
+  }
+  // Frontmatter summary under the title
+  const fm = m.fm;
+  if (Object.keys(fm).length) {
+    const div = document.createElement('div');
+    div.className = 'doc-meta';
+    const tags = [].concat(fm.tags || []);
+    div.innerHTML = [
+      fm.author && `<span>By ${h(fm.author)}</span>`,
+      fm.updated && `<span>Updated ${h(fmtDate(fm.updated))}</span>`,
+      fm.status && `<span class="badge ${/review/i.test(fm.status) && !/reviewed/i.test(fm.status) ? 'warn' : 'accent'}">${h(fm.status)}</span>`,
+      tags.length && `<span class="tags">${tags.map(t => `<span class="badge">${h(t)}</span>`).join('')}</span>`,
+      `<button class="link-btn" data-act="info">Document details</button>`,
+    ].filter(Boolean).join('');
+    const h1 = $('h1', art);
+    h1 ? h1.after(div) : art.prepend(div);
+  }
+  // Links
+  for (const a of $$('a', art)) {
+    const wiki = a.dataset.wiki, href = a.getAttribute('href') || '';
+    const internal = (key, hash) => { a.dataset.doc = key; a.dataset.hash = hash || ''; a.href = '#'; a.title = `Open “${meta(key).title}”`; };
+    const broken = target => { a.classList.add('broken'); a.dataset.broken = target; a.href = '#'; a.title = 'This page can’t be found'; a.insertAdjacentHTML('beforeend', `<span class="vh"> (missing page)</span>${icon('alert', 'broken-i')}`); };
+    if (wiki) {
+      const [name, sec] = wiki.split('#');
+      const t = resolveWiki(cid, name);
+      t ? internal(keyOf(cid, t), sec ? slugify(sec) : '') : broken(name);
+    } else if (/^(https?:|mailto:)/i.test(href)) {
+      a.classList.add('ext'); a.dataset.ext = href; a.target = '_blank'; a.rel = 'noopener noreferrer';
+      a.insertAdjacentHTML('beforeend', `<span class="vh"> (opens in your web browser)</span>${icon('external', 'ext-i')}`);
+    } else if (href.startsWith('#')) {
+      a.dataset.anchor = href.slice(1);
+    } else if (href) {
+      const [p, hash = ''] = href.split('#');
+      let target = resolvePath(path, decodeURIComponent(p));
+      if (!collections[cid].files[target] && collections[cid].files[target + '.md']) target += '.md';
+      collections[cid].files[target] ? internal(keyOf(cid, target), hash) : broken(p);
+    }
+  }
+  // Images: local files resolve inside the collection; internet pictures wait for permission
+  for (const img of $$('img', art)) {
+    const src = img.getAttribute('src') || '', alt = img.getAttribute('alt') || '';
+    const fig = document.createElement('figure');
+    if (/^https?:/i.test(src)) {
+      let host = src; try { host = new URL(src).host; } catch { }
+      fig.className = 'remote-img'; fig.dataset.src = src; fig.dataset.alt = alt;
+      const blocked = S.prefs.remoteImages === 'block';
+      fig.innerHTML = `<div class="remote-box">${icon('image')}<div><p><strong>Picture from the internet not shown</strong><br>${h(alt)}</p><p>It's stored on <strong>${h(host)}</strong>. ${blocked ? 'Your privacy settings block pictures from the internet.' : 'Loading it would let that website know you are reading this page.'}</p><button class="btn sm" data-act="remote-img">${blocked ? 'Change privacy settings' : 'Review and show picture…'}</button></div></div>`;
+    } else {
+      const t = resolvePath(path, decodeURIComponent(src)), f = collections[cid].files[t];
+      if (f?.type === 'img') {
+        img.src = f.url; img.loading = 'lazy';
+        fig.innerHTML = img.outerHTML + (alt ? `<figcaption>${h(alt)}</figcaption>` : '');
+      } else fig.innerHTML = `<div class="missing-img">${icon('image')}<div><p><strong>Picture not found</strong><br>“${h(src)}” isn't in this collection.</p></div></div>`;
+    }
+    const host = img.closest('p');
+    host && host.textContent.trim() === '' && host.children.length === 1 ? host.replaceWith(fig) : img.replaceWith(fig);
+  }
+  // Tables scroll on their own
+  for (const t of $$('table', art)) { const w = document.createElement('div'); w.className = 'table-wrap'; w.tabIndex = 0; w.setAttribute('role', 'region'); w.setAttribute('aria-label', 'Table'); t.replaceWith(w); w.append(t); }
+  // Code: diagrams become figures, the rest gets a label and a copy button
+  for (const code of $$('pre > code', art)) {
+    const pre = code.parentElement, lang = (/language-(\S+)/.exec(code.className) || [])[1];
+    if (lang === 'mermaid') {
+      const src = code.textContent, label = (/^%%\s*(.+)$/m.exec(src) || [])[1] || 'Diagram';
+      const fig = document.createElement('figure');
+      fig.className = 'diagram'; fig.dataset.src = src;
+      fig.innerHTML = `<div class="diagram-body" role="img" aria-label="${h(label)}"></div><figcaption>${h(label)}</figcaption>`;
+      pre.replaceWith(fig);
+      continue;
+    }
+    const box = document.createElement('div');
+    box.className = 'code-block';
+    box.innerHTML = `<div class="code-head"><span>${h({ yaml: 'Settings file (YAML)', json: 'Data (JSON)', bash: 'Command', powershell: 'Command' }[lang] || (lang ? lang.toUpperCase() : 'Text'))}</span><button class="btn sm" data-act="copy">${icon('copy')}Copy</button></div>`;
+    pre.replaceWith(box); box.append(pre);
+  }
+  // Maths (MathML output: no stylesheet needed)
+  for (const el of $$('.math', art)) {
+    if (!window.katex) continue;
+    // renderToString (not render) so it also works when the file is opened directly without a doctype
+    try { el.innerHTML = katex.renderToString(el.dataset.tex, { displayMode: el.classList.contains('math-block'), output: 'mathml', throwOnError: false }); } catch { }
+  }
+}
+
+let mmSeq = 0;
+async function renderMermaid(root) {
+  for (const fig of $$('.diagram', root)) {
+    const body = $('.diagram-body', fig), src = fig.dataset.src;
+    if (!window.mermaid) {
+      fig.dataset.pending = '1';
+      body.innerHTML = window.__mmFailed
+        ? `<p class="muted small">This diagram can't be drawn because the diagram tool didn't load (you may be offline). Its description:</p><pre><code>${h(src)}</code></pre>`
+        : '<p class="muted small">Drawing diagram…</p>';
+      continue;
+    }
+    try {
+      mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: isDark() ? 'dark' : 'neutral', fontFamily: 'Figtree, system-ui, sans-serif' });
+      const { svg } = await mermaid.render('mmd' + (++mmSeq), src);
+      body.innerHTML = svg;
+      delete fig.dataset.pending;
+    } catch {
+      body.innerHTML = `<p class="muted small">This diagram couldn't be drawn. Its description is shown instead.</p><pre><code>${h(src)}</code></pre>`;
+    }
+  }
+}
+
+/* ================= State ================= */
+const DEFAULT_PREFS = { theme: 'light', contrast: false, fontSize: 18, width: 68, lineHeight: 1.7, zoom: 100, font: 'serif', motion: 'system', lang: 'en', extLinks: 'ask', remoteImages: 'ask' };
+const S = {
+  view: 'home', ws: 'personal', cid: 'sample',
+  split: false, ratio: .5, activePane: 0,
+  panes: [{ tabs: [], active: null }, { tabs: [], active: null }],
+  sidebar: !narrow(780), toc: !narrow(1080),
+  treeFilter: '', openFolders: new Set(), tocCollapsed: new Set(), find: [null, null],
+  libTab: 'recent', libSort: 'recent', libFilter: '',
+  searchQ: '', scope: 'workspace', headingsOnly: false, whole: false, folder: '',
+  prefs: { ...DEFAULT_PREFS, ...store.get('prefs', {}) },
+  favorites: store.get('favorites', []), favCols: store.get('favCols', ['sample']),
+  bookmarks: store.get('bookmarks', []), recent: store.get('recent', []), searches: store.get('searches', []),
+  progress: store.get('progress', {}), wsSeen: store.get('wsSeen', {}), openedFolders: store.get('openedFolders', []),
+};
+let prevSession = store.get('session', null);
+let tabSeq = 0, renderVer = 0;
+const EXAMPLE_SESSION = { ws: 'personal', cid: 'sample', split: false, example: true, panes: [{ tabs: [{ key: 'sample/README.md' }, { key: 'sample/Guides/Security.md' }, { key: 'sample/Technical/Architecture.md' }], active: 1 }, { tabs: [] }] };
+
+const activeTab = (i = S.activePane) => S.panes[i].tabs.find(t => t.id === S.panes[i].active);
+const curEntry = t => t?.hist[t.i];
+const curKey = (i = S.activePane) => curEntry(activeTab(i))?.key ?? null;
+const newTab = (key, hash) => ({ id: ++tabSeq, hist: [{ key, scroll: 0, pendingHash: hash || null }], i: 0 });
+
+let saveTimer;
+function saveLater() { clearTimeout(saveTimer); saveTimer = setTimeout(() => { store.set('progress', S.progress); saveSession(); }, 600); }
+function saveSession() {
+  const ok = k => collections[parseKey(k).cid]?.persist;
+  store.set('session', {
+    at: Date.now(), ws: S.ws, cid: S.cid, split: S.split, ratio: S.ratio,
+    panes: S.panes.map(p => {
+      const tabs = p.tabs.filter(t => ok(curEntry(t).key));
+      return { tabs: tabs.map(t => ({ key: curEntry(t).key, scroll: Math.round(curEntry(t).scroll || 0) })), active: Math.max(0, tabs.findIndex(t => t.id === p.active)) };
+    }),
+  });
+}
+
+/* ================= i18n (main navigation only in this prototype) ================= */
+const I18N = {
+  en: { proto: 'Prototype', proto_note: 'Simulated desktop app, not production software', nav_home: 'Home', nav_reader: 'Reading', nav_search: 'Search', nav_split: 'Side by side', nav_prefs: 'Preferences', nav_library: 'Library', nav_help: 'Privacy & Help', search_ph: 'Search documents', workspace: 'Workspace', collections: 'Collections', documents: 'Documents', filter_ph: 'Filter documents', favorites: 'Favorites', bookmarks: 'Bookmarks', recent: 'Recent', contents: 'On this page', welcome: 'Welcome to Folio', welcome_sub: 'Open a document or a folder and read it like a book. Your files stay on your computer.', open_file: 'Open a document', open_folder: 'Open a folder', explore: 'Explore the sample library', search_title: 'Search', library_title: 'Library', prefs_title: 'Reading preferences', help_title: 'Privacy, security and help' },
+  es: { proto: 'Prototipo', proto_note: 'Aplicación de escritorio simulada, no es software final', nav_home: 'Inicio', nav_reader: 'Lectura', nav_search: 'Buscar', nav_split: 'En paralelo', nav_prefs: 'Preferencias', nav_library: 'Biblioteca', nav_help: 'Privacidad y ayuda', search_ph: 'Buscar documentos', workspace: 'Espacio', collections: 'Colecciones', documents: 'Documentos', filter_ph: 'Filtrar documentos', favorites: 'Favoritos', bookmarks: 'Marcadores', recent: 'Recientes', contents: 'En esta página', welcome: 'Te damos la bienvenida a Folio', welcome_sub: 'Abre un documento o una carpeta y léelo como un libro. Tus archivos se quedan en tu equipo.', open_file: 'Abrir un documento', open_folder: 'Abrir una carpeta', explore: 'Explorar la biblioteca de ejemplo', search_title: 'Buscar', library_title: 'Biblioteca', prefs_title: 'Preferencias de lectura', help_title: 'Privacidad, seguridad y ayuda' },
+  de: { proto: 'Prototyp', proto_note: 'Simulierte Desktop-App, keine fertige Software', nav_home: 'Start', nav_reader: 'Lesen', nav_search: 'Suche', nav_split: 'Nebeneinander', nav_prefs: 'Einstellungen', nav_library: 'Bibliothek', nav_help: 'Datenschutz & Hilfe', search_ph: 'Dokumente durchsuchen', workspace: 'Arbeitsbereich', collections: 'Sammlungen', documents: 'Dokumente', filter_ph: 'Dokumente filtern', favorites: 'Favoriten', bookmarks: 'Lesezeichen', recent: 'Zuletzt', contents: 'Auf dieser Seite', welcome: 'Willkommen bei Folio', welcome_sub: 'Öffnen Sie ein Dokument oder einen Ordner und lesen Sie wie in einem Buch. Ihre Dateien bleiben auf Ihrem Computer.', open_file: 'Dokument öffnen', open_folder: 'Ordner öffnen', explore: 'Beispielbibliothek ansehen', search_title: 'Suche', library_title: 'Bibliothek', prefs_title: 'Leseeinstellungen', help_title: 'Datenschutz, Sicherheit und Hilfe' },
+};
+const t = k => (I18N[S.prefs.lang] || I18N.en)[k] ?? I18N.en[k] ?? k;
+function translate() {
+  $$('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+  $$('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); el.setAttribute('aria-label', t(el.dataset.i18nPh)); });
+}
+
+/* ================= Preferences ================= */
+function applyPrefs() {
+  const P = S.prefs, r = document.documentElement, wasDark = r.dataset.dark;
+  const base = themeOf(P.theme)[2];
+  if (base) r.dataset.theme = base; else r.removeAttribute('data-theme');
+  if (base && P.theme !== base) r.dataset.palette = P.theme; else r.removeAttribute('data-palette');
+  r.dataset.contrast = P.contrast ? 'high' : 'normal';
+  r.dataset.motion = P.motion;
+  r.style.fontSize = P.zoom + '%';
+  r.style.setProperty('--read-size', P.fontSize / 16 + 'rem');
+  r.style.setProperty('--read-width', P.width + 'ch');
+  r.style.setProperty('--read-lh', P.lineHeight);
+  r.style.setProperty('--read-font', `var(--font-${P.font})`);
+  r.lang = P.lang;
+  translate();
+  const dark = String(isDark());
+  r.dataset.dark = dark;
+  $('#appearance-btn use').setAttribute('href', dark === 'true' ? '#i-moon' : '#i-sun');
+  $$('[data-theme-val]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.themeVal === P.theme)));
+  $('#pop-size').textContent = P.fontSize + ' px';
+  if (wasDark && wasDark !== dark) { renderVer++; if (S.view === 'reader') renderReader(); }
+}
+function setPref(k, v) {
+  S.prefs[k] = v; store.set('prefs', S.prefs); applyPrefs(); syncPrefsForm();
+  if (k === 'remoteImages') { renderVer++; if (S.view === 'reader') renderReader(); }
+}
+function syncPrefsForm() {
+  const P = S.prefs;
+  $$('#prefs-form [name="theme"]').forEach(r => { r.checked = r.value === P.theme; });
+  $('#p-font').value = P.font; $('#p-lang').value = P.lang;
+  $('#p-size').value = P.fontSize; $('#o-size').textContent = P.fontSize + ' px';
+  $('#p-width').value = P.width; $('#o-width').textContent = P.width < 60 ? `Narrow (${P.width})` : P.width > 80 ? `Wide (${P.width})` : `Medium (${P.width})`;
+  $('#p-lh').value = P.lineHeight; $('#o-lh').textContent = Number(P.lineHeight).toFixed(2) + '×';
+  $('#p-zoom').value = P.zoom; $('#o-zoom').textContent = P.zoom + '%';
+  $('#p-contrast').checked = P.contrast; $('#p-motion').checked = P.motion === 'reduce';
+  $$('[name="ext"]').forEach(r => { r.checked = r.value === P.extLinks; });
+  $$('[name="remote"]').forEach(r => { r.checked = r.value === P.remoteImages; });
+}
+
+/* ================= Navigation ================= */
+function openDoc(key, { mode = 'tab', pane = S.activePane, hash = '', find = null, focusDoc = false } = {}) {
+  if (!fileOf(key)) { toast('That document is no longer available.'); return; }
+  if (!S.split) pane = 0;
+  const p = S.panes[pane];
+  let tab = activeTab(pane);
+  if (mode === 'tab') {
+    tab = p.tabs.find(x => curEntry(x).key === key);
+    if (tab) { if (hash) curEntry(tab).pendingHash = hash; }
+    else { tab = newTab(key, hash); p.tabs.push(tab); }
+  } else if (!tab) { tab = newTab(key, hash); p.tabs.push(tab); }
+  else if (curEntry(tab).key === key) { if (hash) curEntry(tab).pendingHash = hash; }
+  else { tab.hist = tab.hist.slice(0, tab.i + 1); tab.hist.push({ key, scroll: 0, pendingHash: hash || null }); tab.i++; }
+  p.active = tab.id;
+  S.activePane = pane;
+  S.find[pane] = find ? { key, q: find.q, hash: find.hash ?? null, idx: 0, fresh: true } : (S.find[pane]?.key === key ? S.find[pane] : null);
+  const { cid } = parseKey(key);
+  S.cid = cid;
+  const w = wsOf(cid); if (w) S.ws = w.id;
+  if (narrow(780)) S.sidebar = false;
+  S.focusDocOnReady = focusDoc ? pane : null;
+  setView('reader');
+  saveSession();
+}
+function addRecent(key) {
+  S.recent = [{ key, at: Date.now() }, ...S.recent.filter(r => r.key !== key)].slice(0, 30);
+  store.set('recent', S.recent);
+}
+function goHist(i, d) {
+  const tab = activeTab(i); if (!tab) return;
+  const n = tab.i + d; if (n < 0 || n >= tab.hist.length) return;
+  tab.i = n; S.find[i] = null;
+  renderAll(); saveSession();
+}
+function closeTab(i, id) {
+  const p = S.panes[i], ix = p.tabs.findIndex(x => x.id === id);
+  if (ix < 0) return;
+  p.tabs.splice(ix, 1);
+  if (p.active === id) p.active = (p.tabs[ix] || p.tabs[ix - 1])?.id ?? null;
+  renderAll(); saveSession();
+  const next = $(`#pane-${i} .tab.is-active .tab-main`) || $(`#pane-${i} .scroller`);
+  next?.focus();
+}
+function toggleSplit(on) {
+  if (on === S.split) { if (S.view !== 'reader') setView('reader'); return; }
+  if (on) {
+    if (!S.panes[0].tabs.length) { const t0 = newTab('sample/README.md'); S.panes[0].tabs.push(t0); S.panes[0].active = t0.id; }
+    S.split = true;
+    if (!S.panes[1].tabs.length) {
+      const cur = curKey(0);
+      const cand = ['sample/References/Glossary.md', 'sample/Guides/Troubleshooting.md', 'sample/README.md'].find(k => k !== cur && fileOf(k));
+      if (cand) { const t1 = newTab(cand); S.panes[1].tabs.push(t1); S.panes[1].active = t1.id; }
+    }
+    S.activePane = 1;
+    toast('Reading side by side. Drag the divider to resize; each side scrolls on its own.');
+  } else {
+    const [p0, p1] = S.panes;
+    for (const tb of p1.tabs) if (!p0.tabs.some(x => curEntry(x).key === curEntry(tb).key)) p0.tabs.push(tb);
+    if (!p0.active && p0.tabs.length) p0.active = p0.tabs[0].id;
+    p1.tabs = []; p1.active = null; S.find[1] = null;
+    S.split = false; S.activePane = 0;
+    toast('Back to single-page reading. Tabs from the right side moved to this side.');
+  }
+  applyRatio();
+  setView('reader');
+  saveSession();
+}
+function applyRatio() {
+  const panes = $('#panes'), div = $('#divider');
+  panes.classList.toggle('is-split', S.split);
+  panes.style.gridTemplateColumns = S.split ? `minmax(0, ${S.ratio}fr) .5rem minmax(0, ${1 - S.ratio}fr)` : 'minmax(0, 1fr)';
+  $('#pane-1').hidden = !S.split; div.hidden = !S.split;
+  div.setAttribute('aria-valuenow', Math.round(S.ratio * 100));
+  div.setAttribute('aria-valuetext', `Left side ${Math.round(S.ratio * 100)} percent`);
+}
+function setRatio(x) { S.ratio = Math.min(.75, Math.max(.25, x)); applyRatio(); }
+function setView(v, { focus = false } = {}) {
+  S.view = v;
+  $$('.view').forEach(s => { s.hidden = s.id !== 'view-' + v; });
+  renderAll();
+  if (focus) (v === 'reader' ? $(`#pane-${S.activePane} .scroller`) : $(`#view-${v} h1`))?.focus({ preventScroll: true });
+}
+function gotoScreen(v) {
+  if (v === 'split') return toggleSplit(true);
+  if (v === 'reader') {
+    if (!S.panes[0].tabs.length) return openDoc('sample/README.md');
+    return setView('reader', { focus: true });
+  }
+  setView(v, { focus: true });
+}
+
+/* ================= Rendering: chrome ================= */
+function preserveFocus(fn) {
+  const fid = document.activeElement?.dataset?.fid;
+  fn();
+  if (fid) { const el = document.querySelector(`[data-fid="${CSS.escape(fid)}"]`); if (el && el !== document.activeElement) el.focus({ preventScroll: true }); }
+}
+function renderAll() {
+  renderChrome(); renderSidebar();
+  if (S.view === 'reader') renderReader();
+  else if (S.view === 'home') renderHome();
+  else if (S.view === 'search') renderSearch();
+  else if (S.view === 'library') renderLibrary();
+  else if (S.view === 'prefs' || S.view === 'help') syncPrefsForm();
+}
+function renderReader() { renderPane(0); if (S.split) renderPane(1); }
+function renderChrome() {
+  const w = $('#workspace');
+  w.dataset.view = S.view; w.dataset.sidebar = S.sidebar ? 'open' : 'closed'; w.dataset.toc = S.toc ? 'open' : 'closed';
+  $('#sidebar-toggle').setAttribute('aria-expanded', String(S.sidebar && S.view !== 'home'));
+  $('#toc-toggle').setAttribute('aria-expanded', String(S.toc && S.view === 'reader'));
+  $('#toc-toggle').hidden = S.view !== 'reader';
+  const cur = S.view === 'reader' && S.split ? 'split' : S.view;
+  $$('.proto-strip [data-goto]').forEach(b => b.dataset.goto === cur ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  const sel = $('#ws-select');
+  sel.innerHTML = workspaces.map(x => `<option value="${x.id}" ${x.id === S.ws ? 'selected' : ''}>${h(x.name)}</option>`).join('');
+}
+
+function renderSidebar() {
+  const ws = curWs();
+  if (!ws.cols.includes(S.cid)) S.cid = ws.cols[0] || null;
+  preserveFocus(() => {
+    $('#col-list').innerHTML = ws.cols.length
+      ? ws.cols.map(id => { const c = collections[id]; return `<li><button class="col-btn" data-act="col" data-cid="${id}" data-fid="col:${id}" aria-pressed="${id === S.cid}">${icon(c.local ? 'folder' : 'book')}<span>${h(c.name)}</span>${c.local ? '<span class="badge">This tab only</span>' : ''}</button></li>`; }).join('')
+      : `<li><p class="side-empty">This workspace has no collections yet.</p><button class="btn sm" data-act="open-folder" style="margin:.3rem .5rem">${icon('folder-open')}Open a folder</button></li>`;
+    const col = collections[S.cid];
+    $('#tree').innerHTML = !col ? '' : S.treeFilter.trim() ? filteredTree(col) : treeHtml(col);
+    const inWs = k => ws.cols.includes(parseKey(k).cid) && fileOf(k);
+    const item = (k, extra = '', fid = 'x') => { const m = meta(k); return `<li><button class="tree-item" data-act="open" data-key="${h(k)}" ${extra} data-fid="${fid}:${h(k)}${extra.length}" title="${h(collections[m.cid].name + ' › ' + m.path)}">${icon(m.isImg ? 'image' : 'file')}<span class="ti-label">${h(friendly(m.path))}</span></button></li>`; };
+    const favs = S.favorites.filter(inWs);
+    $('#side-favs').innerHTML = favs.length ? favs.map(k => item(k, '', 'fav')).join('') : '<li><p class="side-empty">Select the star on a document to keep it here.</p></li>';
+    const bms = S.bookmarks.filter(b => inWs(b.key)).slice(0, 6);
+    $('#side-bms').innerHTML = bms.length ? bms.map(b => `<li><button class="tree-item" data-act="open" data-key="${h(b.key)}" data-hash="${h(b.slug)}" data-fid="bm:${b.id}" title="${h(meta(b.key).title)}">${icon('bookmark')}<span class="ti-label">${h(b.heading)}<span class="ti-path">${h(meta(b.key).title)}</span></span></button></li>`).join('') : '<li><p class="side-empty">Bookmark a section to come back to it.</p></li>';
+    const rec = S.recent.filter(r => inWs(r.key)).slice(0, 5);
+    $('#side-recent').innerHTML = rec.length ? rec.map(r => item(r.key, '', 'rec')).join('') : '<li><p class="side-empty">Documents you open appear here.</p></li>';
+  });
+}
+const readmeFirst = (a, b) => (/^(readme|index)\./i.test(basename(b)) - /^(readme|index)\./i.test(basename(a))) || a.localeCompare(b);
+function buildTree(files) {
+  const root = { dirs: {}, files: [] };
+  for (const p of Object.keys(files)) {
+    const parts = p.split('/'); let node = root;
+    parts.slice(0, -1).forEach((d, i) => { node = node.dirs[d] ||= { dirs: {}, files: [], path: parts.slice(0, i + 1).join('/') }; });
+    node.files.push(p);
+  }
+  return root;
+}
+function treeHtml(col) {
+  const cur = curKey();
+  const fileBtn = p => { const k = keyOf(col.id, p), f = col.files[p]; return `<li><button class="tree-item" data-act="open" data-key="${h(k)}" data-fid="tree:${h(k)}" ${k === cur && S.view === 'reader' ? 'aria-current="page"' : ''} title="${h(p)}">${icon(f.type === 'img' ? 'image' : 'file')}<span class="ti-label">${h(friendly(p))}</span>${S.favorites.includes(k) ? `<svg class="i ti-star" aria-label="Favorite" role="img"><use href="#i-star-fill"/></svg>` : ''}</button></li>`; };
+  const walk = node => node.files.sort(readmeFirst).map(fileBtn).join('') + Object.keys(node.dirs).sort().map(d => {
+    const n = node.dirs[d], id = col.id + ':' + n.path, open = S.openFolders.has(id);
+    return `<li><button class="tree-item tree-dir" data-act="folder" data-folder="${h(id)}" data-fid="dir:${h(id)}" aria-expanded="${open}">${icon('chevron', 'twisty')}${icon(open ? 'folder-open' : 'folder')}<span class="ti-label">${h(d)}</span></button>${open ? `<ul class="tree-sub">${walk(n)}</ul>` : ''}</li>`;
+  }).join('');
+  return `<ul>${walk(buildTree(col.files))}</ul>`;
+}
+function filteredTree(col) {
+  const q = S.treeFilter.trim().toLowerCase();
+  const hits = Object.values(col.files).filter(f => friendly(f.path).toLowerCase().includes(q) || f.path.toLowerCase().includes(q) || (f.type === 'md' && meta(keyOf(col.id, f.path)).title.toLowerCase().includes(q)));
+  if (!hits.length) return `<p class="side-empty">No documents match “${h(S.treeFilter)}”.</p>`;
+  return `<p class="side-empty" aria-live="polite">${hits.length} matching</p><ul>${hits.map(f => { const k = keyOf(col.id, f.path); return `<li><button class="tree-item" data-act="open" data-key="${h(k)}" data-fid="flt:${h(k)}">${icon(f.type === 'img' ? 'image' : 'file')}<span class="ti-label">${h(friendly(f.path))}<span class="ti-path">${h(dirname(f.path) || 'Top level')}</span></span></button></li>`; }).join('')}</ul>`;
+}
+
+/* ================= Rendering: panes ================= */
+function paneShell(i) {
+  return `<div class="tabbar"><nav class="tabs" aria-label="${i ? 'Open documents, right side' : 'Open documents'}"></nav>${i ? `<div class="tabbar-end">${ib('close-pane', 'x', 'Close this side', 'data-pane="1"')}</div>` : ''}</div>
+  <div class="toolbar">${ib('back', 'arrow-left', 'Back (Alt + Left)')}${ib('fwd', 'arrow-right', 'Forward (Alt + Right)')}<nav class="crumbs" aria-label="Location"></nav>
+   <div class="tool-actions">${ib('fav', 'star', 'Add to favorites', 'aria-pressed="false"')}${ib('bookmark', 'bookmark', 'Bookmark this section', 'aria-pressed="false"')}${ib('find', 'search', 'Search in this document')}${ib('info', 'info', 'Document details')}${i ? '' : ib('split', 'columns', 'Read side by side', 'aria-pressed="false"')}</div></div>
+  <div class="progress" role="progressbar" aria-label="Reading progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-fill"></div></div>
+  <div class="findbar" hidden></div>
+  <div class="scroller" tabindex="0"><div class="page"></div></div>
+  <div class="statusbar"></div>`;
+}
+function renderPane(i) {
+  const el = $('#pane-' + i), p = S.panes[i], tab = activeTab(i), e = curEntry(tab), key = e?.key ?? null, m = key && meta(key);
+  el.classList.toggle('is-active', S.split && S.activePane === i);
+  preserveFocus(() => {
+    $('.tabs', el).innerHTML = p.tabs.length ? p.tabs.map(x => {
+      const xm = meta(curEntry(x).key), act = x.id === p.active, name = friendly(xm.path);
+      return `<div class="tab ${act ? 'is-active' : ''}"><button class="tab-main" data-act="tab" data-pane="${i}" data-tab="${x.id}" data-fid="tab:${i}:${x.id}" ${act ? 'aria-current="true"' : ''} title="${h(xm.title)}">${icon(xm.isImg ? 'image' : 'file')}<span>${h(name)}</span></button><button class="tab-close" data-act="close-tab" data-pane="${i}" data-tab="${x.id}" data-fid="tabx:${i}:${x.id}" aria-label="Close ${h(name)}" title="Close">${icon('x')}</button></div>`;
+    }).join('') : `<span class="tabs-empty">No documents open</span>`;
+    $('.crumbs', el).innerHTML = key ? crumbs(m) : '';
+  });
+  const btn = a => $(`.toolbar [data-act="${a}"]`, el);
+  btn('back').disabled = !tab || tab.i <= 0;
+  btn('fwd').disabled = !tab || tab.i >= tab.hist.length - 1;
+  ['fav', 'bookmark', 'find', 'info'].forEach(a => { btn(a).disabled = !key || (m.isImg && a !== 'info' && a !== 'fav'); });
+  const fav = key && S.favorites.includes(key);
+  btn('fav').setAttribute('aria-pressed', String(!!fav));
+  btn('fav').setAttribute('aria-label', fav ? 'Remove from favorites' : 'Add to favorites');
+  btn('fav').title = btn('fav').getAttribute('aria-label');
+  if (!i) { btn('split').setAttribute('aria-pressed', String(S.split)); btn('split').setAttribute('aria-label', S.split ? 'Back to single page' : 'Read side by side'); btn('split').title = btn('split').getAttribute('aria-label'); }
+
+  const page = $('.page', el), sc = $('.scroller', el);
+  const changed = el._key !== key || el._ver !== renderVer;
+  if (changed) {
+    if (key && el._key !== key) addRecent(key);
+    el._key = key; el._ver = renderVer;
+    page.replaceChildren(key ? renderDoc(key) : emptyPane(i));
+    sc.setAttribute('aria-label', key ? `Document: ${m.title}` : 'No document open');
+    el._heads = $$('[data-slug]', page).filter(x => /^H[1-4]$/.test(x.tagName));
+    el._ready = renderMermaid(page);
+  }
+  const ver = el._ver;
+  el._ready.then(() => {
+    if (el._key !== key || el._ver !== ver) return;
+    const f = S.find[i];
+    if (f && f.key === key) { if (changed || f.fresh) applyFind(i); }
+    else if (changed || !$('.findbar', el).hidden) clearFind(i);
+    if (e?.pendingHash) { scrollToSlug(i, e.pendingHash); e.pendingHash = null; }
+    else if (changed && !(f && f.key === key)) sc.scrollTop = e?.scroll || 0;
+    updateProgress(i);
+    if (i === S.activePane) renderToc();
+    if (S.focusDocOnReady === i) { S.focusDocOnReady = null; $('h1', page)?.focus({ preventScroll: true }); }
+  });
+  const sb = $('.statusbar', el);
+  sb.innerHTML = !key ? '' : m.isImg ? `<span class="ro">${icon('lock')}Read-only</span><span>Image · ${fmtSize(fileOf(key).size)}</span>`
+    : `<span class="ro" title="Folio never changes your files">${icon('lock')}Read-only</span><span>${m.words.toLocaleString()} words · about ${Math.max(1, Math.round(m.words / 200))} min</span><span class="sb-pct">0% read</span><span>Updated ${h(fmtDate(m.fm.updated || fileOf(key).modified))}</span>`;
+}
+function crumbs(m) {
+  const col = collections[m.cid], parts = m.folder ? m.folder.split('/') : [];
+  return `<ol><li><button data-act="crumb" data-cid="${m.cid}" data-folder="" title="Show collection">${h(col.name)}</button></li>${parts.map((d, ix) => `<li><button data-act="crumb" data-cid="${m.cid}" data-folder="${h(parts.slice(0, ix + 1).join('/'))}" title="Show folder">${h(d)}</button></li>`).join('')}<li aria-current="page"><span>${h(friendly(m.path))}</span></li></ol>`;
+}
+function emptyPane(i) {
+  const d = document.createElement('div');
+  d.className = 'empty-pane';
+  const picks = ['sample/README.md', 'sample/Getting-Started.md', 'sample/References/Glossary.md'];
+  d.innerHTML = `${icon('book', 'big')}<h2>${i ? 'Choose a document for this side' : 'No document open'}</h2><p class="muted">Pick a page in the left panel${S.split ? '. It opens on the side you last selected' : ''}, or start with one of these:</p><ul>${picks.map(k => `<li><button class="link-btn" data-act="open" data-key="${k}" data-pane="${i}">${h(meta(k).title)}</button></li>`).join('')}</ul>${i ? `<button class="btn" data-act="split-off">Back to single page</button>` : ''}`;
+  return d;
+}
+function scrollToSlug(i, slug) {
+  const el = $('#pane-' + i), target = $(`[data-slug="${CSS.escape(slug)}"]`, el);
+  if (!target) { toast('That section couldn’t be found. It may have been renamed.'); return; }
+  $('.scroller', el).scrollTo({ top: target.offsetTop - 12, behavior: reduced() ? 'auto' : 'smooth' });
+  target.focus({ preventScroll: true });
+}
+const progRaf = [0, 0];
+function updateProgress(i) {
+  cancelAnimationFrame(progRaf[i]);
+  progRaf[i] = requestAnimationFrame(() => {
+    const el = $('#pane-' + i), sc = $('.scroller', el), key = el._key;
+    if (!sc.clientHeight) return; // pane hidden: nothing is being read
+    const max = sc.scrollHeight - sc.clientHeight, pct = !key ? 0 : max <= 4 ? 100 : Math.min(100, Math.round(sc.scrollTop / max * 100));
+    $('.progress-fill', el).style.width = pct + '%';
+    $('.progress', el).setAttribute('aria-valuenow', pct);
+    const sp = $('.sb-pct', el); if (sp) sp.textContent = pct + '% read';
+    if (key && pct > (S.progress[key] || 0)) { S.progress[key] = pct; saveLater(); }
+    if (i === S.activePane) { updateTocCurrent(); updateBookmarkBtn(i); }
+  });
+}
+function currentSlug(i) {
+  const el = $('#pane-' + i), sc = $('.scroller', el), hs = el._heads || [];
+  if (!hs.length) return null;
+  if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 4 && sc.scrollTop > 0) return hs.at(-1).dataset.slug;
+  let cur = hs[0];
+  for (const hd of hs) { if (hd.offsetTop <= sc.scrollTop + 90) cur = hd; else break; }
+  return cur.dataset.slug;
+}
+function updateBookmarkBtn(i) {
+  const key = $('#pane-' + i)._key, slug = currentSlug(i) || '', b = $(`#pane-${i} [data-act="bookmark"]`);
+  const on = !!key && S.bookmarks.some(x => x.key === key && x.slug === slug);
+  b.setAttribute('aria-pressed', String(on));
+  b.setAttribute('aria-label', on ? 'Remove bookmark for this section' : 'Bookmark this section'); b.title = b.getAttribute('aria-label');
+}
+
+/* ================= Table of contents ================= */
+function renderToc() {
+  const i = S.activePane, el = $('#pane-' + i), key = el._key, body = $('#toc-body');
+  $('#toc-doc').textContent = key ? meta(key).title : '';
+  const hs = (el._heads || []).filter(x => x.tagName !== 'H1');
+  if (!key || !hs.length) { body.innerHTML = `<p class="muted small">${key ? 'This document has no sections.' : 'Open a document to see its sections.'}</p>`; return; }
+  const root = { children: [] }, stack = [{ lvl: 1, node: root }];
+  for (const hd of hs) {
+    const lvl = +hd.tagName[1], node = { hd, children: [] };
+    while (stack.length > 1 && stack.at(-1).lvl >= lvl) stack.pop();
+    stack.at(-1).node.children.push(node); stack.push({ lvl, node });
+  }
+  const draw = nodes => `<ol>${nodes.map(n => {
+    const slug = n.hd.dataset.slug, id = key + '#' + slug, has = n.children.length, open = !S.tocCollapsed.has(id), label = n.hd.textContent;
+    return `<li><div class="toc-row">${has ? `<button class="toc-twisty" data-act="toc-twisty" data-id="${h(id)}" data-fid="tw:${h(id)}" aria-expanded="${open}" aria-label="${open ? 'Hide' : 'Show'} subsections of ${h(label)}">${icon('chevron')}</button>` : '<span class="toc-spacer"></span>'}<a href="#" class="toc-link" data-act="toc" data-slug="${h(slug)}" data-fid="toc:${h(id)}">${h(label)}</a></div>${has && open ? draw(n.children) : ''}</li>`;
+  }).join('')}</ol>`;
+  preserveFocus(() => { body.innerHTML = draw(root.children); });
+  updateTocCurrent();
+}
+function updateTocCurrent() {
+  const i = S.activePane, el = $('#pane-' + i), slug = currentSlug(i), hs = el._heads || [];
+  let target = slug;
+  // If the current section is hidden inside a collapsed entry, light up its nearest visible parent
+  if (slug && !$(`#toc-body .toc-link[data-slug="${CSS.escape(slug)}"]`)) {
+    const ix = hs.findIndex(x => x.dataset.slug === slug); let lvl = hs[ix] ? +hs[ix].tagName[1] : 9;
+    for (let j = ix - 1; j >= 0; j--) { const l = +hs[j].tagName[1]; if (l < lvl) { lvl = l; if ($(`#toc-body .toc-link[data-slug="${CSS.escape(hs[j].dataset.slug)}"]`)) { target = hs[j].dataset.slug; break; } } }
+  }
+  for (const a of $$('#toc-body .toc-link')) {
+    const on = a.dataset.slug === target;
+    a.classList.toggle('current', on);
+    on ? a.setAttribute('aria-current', 'location') : a.removeAttribute('aria-current');
+    if (on && S.toc) a.scrollIntoView({ block: 'nearest' });
+  }
+}
+
+/* ================= Find in document ================= */
+function clearMarks(root) {
+  for (const m of $$('mark.hit', root)) { const p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); }
+}
+function markText(root, re) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n => n.parentElement.closest('svg, math, .diagram, button, .vh, .doc-meta') || !n.nodeValue.trim() ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+  const marks = [];
+  for (const node of nodes) {
+    const text = node.nodeValue; re.lastIndex = 0;
+    if (!re.test(text)) continue;
+    re.lastIndex = 0;
+    const frag = document.createDocumentFragment(); let last = 0, mm;
+    while ((mm = re.exec(text))) {
+      if (!mm[0]) { re.lastIndex++; continue; }
+      frag.append(text.slice(last, mm.index));
+      const mk = document.createElement('mark'); mk.className = 'hit'; mk.textContent = mm[0];
+      frag.append(mk); marks.push(mk); last = mm.index + mm[0].length;
+    }
+    frag.append(text.slice(last));
+    node.replaceWith(frag);
+  }
+  return marks;
+}
+function queryRegex(q, whole, words = false) {
+  const b = whole ? '\\b' : '';
+  const parts = words ? q.trim().split(/\s+/).map(escapeRe) : [escapeRe(q.trim())];
+  return new RegExp(parts.map(p => b + p + b).join('|'), 'gi');
+}
+function applyFind(i) {
+  const el = $('#pane-' + i), page = $('.page', el), f = S.find[i];
+  clearMarks(page);
+  f.fresh = false;
+  let marks = markText(page, queryRegex(f.q, S.whole));
+  if (!marks.length) marks = markText(page, queryRegex(f.q, S.whole, true));
+  f.marks = marks;
+  if (f.hash != null) {
+    const hd = $(`[data-slug="${CSS.escape(f.hash)}"]`, page);
+    f.idx = Math.max(0, hd ? marks.findIndex(mk => hd.compareDocumentPosition(mk) & Node.DOCUMENT_POSITION_FOLLOWING) : 0);
+    f.hash = null;
+  }
+  renderFindbar(i);
+  if (marks.length) gotoMark(i, f.idx);
+}
+function renderFindbar(i) {
+  const f = S.find[i], bar = $(`#pane-${i} .findbar`);
+  bar.hidden = false;
+  bar.innerHTML = `${icon('search')}<span class="grow" aria-live="polite">${f.marks.length ? `Match <strong>${f.idx + 1}</strong> of ${f.marks.length} for “${h(f.q)}”` : `No matches for “${h(f.q)}” in this document`}</span>
+    ${ib('find-prev', 'chev-up', 'Previous match', f.marks.length ? '' : 'disabled')}${ib('find-next', 'chev-down', 'Next match', f.marks.length ? '' : 'disabled')}<button class="btn sm" data-act="find-clear">Clear highlights</button>`;
+}
+function gotoMark(i, idx) {
+  const f = S.find[i]; if (!f?.marks?.length) return;
+  f.idx = (idx + f.marks.length) % f.marks.length;
+  f.marks.forEach((m, j) => m.classList.toggle('current', j === f.idx));
+  const sc = $(`#pane-${i} .scroller`), mk = f.marks[f.idx];
+  const top = mk.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - sc.clientHeight / 3;
+  sc.scrollTo({ top, behavior: reduced() ? 'auto' : 'smooth' });
+  renderFindbar(i);
+}
+function clearFind(i) {
+  S.find[i] = null;
+  const el = $('#pane-' + i);
+  clearMarks($('.page', el));
+  $('.findbar', el).hidden = true;
+}
+
+/* ================= Search ================= */
+function scopeKeys(scope) {
+  if (scope === 'doc') { const k = curKey(); return k && !meta(k).isImg ? [k] : []; }
+  if (scope === 'collection') return S.cid ? docKeys([S.cid]) : [];
+  return wsDocKeys();
+}
+function searchDocs(q, { scope = S.scope, headingsOnly = S.headingsOnly, whole = S.whole, folder = S.folder } = {}) {
+  q = q.trim(); if (!q) return [];
+  const b = whole ? '\\b' : '';
+  const phrase = new RegExp(b + escapeRe(q) + b, 'i');
+  const words = q.split(/\s+/).map(w => new RegExp(b + escapeRe(w) + b, 'i'));
+  const res = [];
+  for (const k of scopeKeys(scope)) {
+    const m = meta(k);
+    if (folder && !(m.folder === folder || m.folder.startsWith(folder + '/'))) continue;
+    const hits = [];
+    for (const s of m.sections) {
+      const inHead = !!s.heading && (phrase.test(s.heading) || words.every(r => r.test(s.heading)));
+      if (headingsOnly) { if (inHead) hits.push({ s, inHead, score: 10 }); continue; }
+      const hasPhrase = phrase.test(s.text), all = words.every(r => r.test(s.text + ' ' + s.heading));
+      if (inHead || hasPhrase || all) hits.push({ s, inHead, score: (inHead ? 10 : 0) + (hasPhrase ? 5 : 1) });
+    }
+    const titleHit = phrase.test(m.title);
+    if (hits.length || (titleHit && !headingsOnly)) res.push({ key: k, m, hits: hits.sort((a, c) => c.score - a.score).slice(0, 3), total: hits.length, score: (titleHit ? 20 : 0) + Math.max(0, ...hits.map(x => x.score)) + hits.length * .1 });
+  }
+  return res.sort((a, c) => c.score - a.score);
+}
+function highlightHtml(text, q, whole) {
+  const re = queryRegex(q, whole, true);
+  let out = '', last = 0, mm; re.lastIndex = 0;
+  while ((mm = re.exec(text))) { if (!mm[0]) { re.lastIndex++; continue; } out += h(text.slice(last, mm.index)) + `<mark>${h(mm[0])}</mark>`; last = mm.index + mm[0].length; }
+  return out + h(text.slice(last));
+}
+function snippet(text, q, whole) {
+  const re = queryRegex(q, whole, true); re.lastIndex = 0;
+  const mm = re.exec(text), at = mm ? mm.index : 0;
+  let start = Math.max(0, at - 70); if (start) start = text.indexOf(' ', start) + 1;
+  const end = Math.min(text.length, start + 200);
+  return (start ? '… ' : '') + highlightHtml(text.slice(start, end), q, whole) + (end < text.length ? ' …' : '');
+}
+function addSearch(q) {
+  q = q.trim(); if (!q) return;
+  S.searches = [{ q, at: Date.now() }, ...S.searches.filter(x => x.q.toLowerCase() !== q.toLowerCase())].slice(0, 15);
+  store.set('searches', S.searches);
+}
+function renderSearch() {
+  const sq = $('#sq'); if (sq.value !== S.searchQ) sq.value = S.searchQ;
+  const ck = curKey(), docOk = !!ck && !meta(ck).isImg;
+  if (S.scope === 'doc' && !docOk) S.scope = 'workspace';
+  $$('[name="scope"]').forEach(r => { r.checked = r.value === S.scope; r.disabled = r.value === 'doc' && !docOk; });
+  $('#scope-doc-l').lastChild.textContent = docOk ? `This document: ${meta(ck).title}` : 'Current document';
+  $('#scope-doc-l').style.opacity = docOk ? '' : '.5';
+  $('#opt-headings').checked = S.headingsOnly; $('#opt-whole').checked = S.whole;
+  const folders = S.cid ? [...new Set(Object.keys(collections[S.cid].files).map(dirname).filter(Boolean).map(d => d.split('/')[0]))].sort() : [];
+  if (!folders.includes(S.folder)) S.folder = '';
+  $('#opt-folder').innerHTML = `<option value="">All folders</option>` + folders.map(f => `<option ${f === S.folder ? 'selected' : ''}>${h(f)}</option>`).join('');
+  renderResults();
+}
+function renderResults() {
+  const q = S.searchQ.trim(), box = $('#search-results'), sum = $('#search-summary');
+  if (!q) {
+    sum.textContent = '';
+    box.innerHTML = `<h2 class="section-h">${icon('clock')}Recent searches</h2>${S.searches.length ? `<ul class="chips">${S.searches.slice(0, 8).map(s => `<li><button class="chip" data-act="search-again" data-q="${h(s.q)}">${icon('search')}${h(s.q)}</button></li>`).join('')}</ul>` : '<p class="muted small">Your searches will be listed here.</p>'}
+      <h2 class="section-h" style="margin-top:1.5rem">${icon('star')}Try searching for</h2><ul class="chips">${['Wi-Fi', 'hold', 'remote images', 'printing', 'licence'].map(s => `<li><button class="chip" data-act="search-again" data-q="${s}">${s}</button></li>`).join('')}</ul>`;
+    return;
+  }
+  const res = searchDocs(q), total = res.reduce((n, r) => n + Math.max(1, r.total), 0);
+  const scopeName = { workspace: `everywhere in “${curWs().name}”`, collection: `in “${collections[S.cid]?.name || ''}”`, doc: 'in this document' }[S.scope];
+  sum.textContent = res.length ? `${total} matching ${total === 1 ? 'section' : 'sections'} in ${res.length} ${res.length === 1 ? 'document' : 'documents'}, ${scopeName}` : `No results for “${q}” ${scopeName}.`;
+  if (!res.length) {
+    box.innerHTML = `<div class="empty-state"><p>Nothing matched “${h(q)}”. Try fewer or different words${S.headingsOnly ? ', or turn off “Headings only”' : ''}.</p>${S.scope !== 'workspace' ? '<button class="btn" data-act="widen-search">Search everywhere instead</button>' : ''}</div>`;
+    return;
+  }
+  box.innerHTML = res.map(r => `<article class="result"><h2><button data-act="res-open" data-key="${h(r.key)}">${highlightHtml(r.m.title, q, S.whole)}</button></h2>
+    <p class="r-path">${h(collections[r.m.cid].name)} › ${h(r.m.path)}${r.total > 3 ? ` · ${r.total} matching sections` : ''}</p>
+    <ul>${r.hits.map(x => `<li><button class="hit-btn" data-act="res-open" data-key="${h(r.key)}" data-hash="${h(x.s.slug)}"><span class="hit-head">${icon('hash')}${x.s.heading ? highlightHtml(x.s.heading, q, S.whole) : 'Introduction'}${x.inHead ? ' <span class="badge accent">Heading match</span>' : ''}</span><span class="hit-snip">${snippet(x.s.text, q, S.whole)}</span></button></li>`).join('')}</ul></article>`).join('');
+}
+
+/* Top-bar search suggestions */
+let sugItems = [], sugIdx = -1;
+function suggest(q) {
+  q = q.trim().toLowerCase();
+  const list = $('#gsuggest'), input = $('#gsearch');
+  if (!q) { list.hidden = true; input.setAttribute('aria-expanded', 'false'); sugItems = []; return; }
+  const out = [];
+  for (const k of wsDocKeys()) { const m = meta(k); if (m.title.toLowerCase().includes(q) || friendly(m.path).toLowerCase().includes(q)) out.push({ key: k, label: m.title, sub: `${collections[m.cid].name} › ${m.path}`, ic: 'file' }); }
+  for (const k of wsDocKeys()) for (const s of meta(k).sections) if (s.level >= 2 && s.heading.toLowerCase().includes(q)) out.push({ key: k, hash: s.slug, label: s.heading, sub: `Section in ${meta(k).title}`, ic: 'hash' });
+  sugItems = [...out.slice(0, 6), { search: true, label: `Search all documents for “${q}”`, ic: 'search' }];
+  sugIdx = -1;
+  list.innerHTML = sugItems.map((s, j) => `<li role="option" id="sug-${j}" data-sug="${j}" aria-selected="false">${icon(s.ic)}<span class="s-main"><span>${h(s.label)}</span>${s.sub ? `<span class="s-sub">${h(s.sub)}</span>` : ''}</span></li>`).join('');
+  list.hidden = false; input.setAttribute('aria-expanded', 'true'); input.removeAttribute('aria-activedescendant');
+}
+function closeSuggest() { $('#gsuggest').hidden = true; $('#gsearch').setAttribute('aria-expanded', 'false'); $('#gsearch').removeAttribute('aria-activedescendant'); }
+function chooseSuggest(j) {
+  const s = sugItems[j], q = $('#gsearch').value.trim();
+  closeSuggest();
+  if (!s || s.search) { runGlobalSearch(q); return; }
+  addSearch(q);
+  $('#gsearch').value = '';
+  openDoc(s.key, s.hash ? { find: { q, hash: s.hash } } : { focusDoc: true });
+}
+function runGlobalSearch(q) {
+  closeSuggest();
+  S.searchQ = q; addSearch(q); $('#gsearch').value = '';
+  setView('search');
+  $('#sq').focus();
+}
+
+/* ================= Library ================= */
+const LIB_TABS = [['recent', 'Recent', 'clock'], ['favorites', 'Favorites', 'star'], ['bookmarks', 'Bookmarks', 'bookmark'], ['progress', 'Reading progress', 'book'], ['history', 'Search history', 'search']];
+function libRows(tab) {
+  const base = k => { const m = meta(k), f = fileOf(k); return { key: k, title: m.title, loc: `${collections[m.cid].name} › ${m.path}`, progress: S.progress[k] || 0, size: f.size, modified: m.fm.updated || f.modified }; };
+  if (tab === 'recent') return S.recent.filter(r => fileOf(r.key)).map(r => ({ ...base(r.key), when: r.at, id: r.key }));
+  if (tab === 'favorites') return S.favorites.filter(fileOf).map((k, j) => ({ ...base(k), when: Date.now() - j, id: k }));
+  if (tab === 'bookmarks') return S.bookmarks.filter(b => fileOf(b.key)).map(b => ({ ...base(b.key), when: b.at, id: b.id, slug: b.slug, heading: b.heading }));
+  if (tab === 'progress') return Object.keys(S.progress).filter(fileOf).map(k => ({ ...base(k), when: S.recent.find(r => r.key === k)?.at || 0, id: k }));
+  return [];
+}
+function renderLibrary() {
+  const counts = { recent: S.recent.filter(r => fileOf(r.key)).length, favorites: S.favorites.filter(fileOf).length, bookmarks: S.bookmarks.filter(b => fileOf(b.key)).length, progress: Object.keys(S.progress).filter(fileOf).length, history: S.searches.length };
+  preserveFocus(() => {
+    $('#lib-tabs').innerHTML = LIB_TABS.map(([id, label, ic]) => `<button role="tab" id="libtab-${id}" data-act="lib-tab" data-tab="${id}" data-fid="lt:${id}" aria-selected="${S.libTab === id}" aria-controls="lib-panel" tabindex="${S.libTab === id ? 0 : -1}">${icon(ic)}${label}<span class="count">${counts[id]}</span></button>`).join('');
+  });
+  $('#lib-panel').setAttribute('aria-labelledby', 'libtab-' + S.libTab);
+  $('#lib-sort').value = S.libSort; $('#lib-sort').closest('label').hidden = S.libTab === 'history';
+  if ($('#lib-filter').value !== S.libFilter) $('#lib-filter').value = S.libFilter;
+  const clear = $('#lib-clear');
+  clear.hidden = !['recent', 'history', 'bookmarks'].includes(S.libTab) || !counts[S.libTab];
+  clear.textContent = { recent: 'Clear recent documents', history: 'Clear search history', bookmarks: 'Remove all bookmarks' }[S.libTab] || '';
+  const fq = S.libFilter.trim().toLowerCase(), body = $('#lib-body');
+  if (S.libTab === 'history') {
+    const rows = S.searches.filter(s => s.q.toLowerCase().includes(fq));
+    body.innerHTML = rows.length ? `<div class="table-scroll"><table class="lib-table"><caption>${rows.length} recent ${rows.length === 1 ? 'search' : 'searches'}</caption><thead><tr><th scope="col">Search</th><th scope="col">When</th><th scope="col"><span class="vh">Actions</span></th></tr></thead><tbody>${rows.map(s => `<tr><td class="t-title">${h(s.q)}</td><td>${ago(s.at)}</td><td><div class="actions"><button class="btn sm" data-act="search-again" data-q="${h(s.q)}">Search again</button><button class="btn sm" data-act="lib-remove" data-kind="history" data-id="${h(s.q)}" aria-label="Remove “${h(s.q)}” from history">Remove</button></div></td></tr>`).join('')}</tbody></table></div>`
+      : `<div class="empty-state">${fq ? 'No searches match the filter.' : 'You haven’t searched for anything yet.'}</div>`;
+    return;
+  }
+  let rows = libRows(S.libTab).filter(r => !fq || (r.title + ' ' + r.loc + ' ' + (r.heading || '')).toLowerCase().includes(fq));
+  const cmp = { recent: (a, b) => b.when - a.when, title: (a, b) => a.title.localeCompare(b.title), location: (a, b) => a.loc.localeCompare(b.loc), progress: (a, b) => b.progress - a.progress, size: (a, b) => b.size - a.size }[S.libSort];
+  rows.sort(cmp);
+  const empty = { recent: 'Documents you open will be listed here.', favorites: 'Select the star on any document to add it to your favorites.', bookmarks: 'While reading, select the bookmark button to save the section you’re in.', progress: 'Start reading a document to track your progress.' }[S.libTab];
+  if (!rows.length) { body.innerHTML = `<div class="empty-state">${fq ? 'Nothing matches the filter.' : empty}</div>`; return; }
+  const kind = S.libTab;
+  body.innerHTML = `<div class="table-scroll"><table class="lib-table"><caption>${rows.length} ${rows.length === 1 ? 'item' : 'items'}</caption>
+   <thead><tr><th scope="col">Document</th><th scope="col">Progress</th><th scope="col" class="hide-sm">Size</th><th scope="col" class="hide-sm">Updated</th><th scope="col" class="hide-sm">${kind === 'bookmarks' ? 'Added' : kind === 'favorites' ? '' : 'Opened'}</th><th scope="col"><span class="vh">Actions</span></th></tr></thead>
+   <tbody>${rows.map(r => `<tr><td><span class="t-title">${h(r.heading ? r.heading : r.title)}</span><span class="t-sub">${r.heading ? `In ${h(r.title)} · ` : ''}${h(r.loc)}</span></td>
+     <td><span class="pct"><span class="mini-bar" aria-hidden="true"><span style="width:${r.progress}%"></span></span>${r.progress}%</span></td>
+     <td class="hide-sm">${fmtSize(r.size)}</td><td class="hide-sm">${h(fmtDate(r.modified))}</td><td class="hide-sm">${kind === 'favorites' ? '' : r.when ? ago(r.when) : 'Not yet'}</td>
+     <td><div class="actions"><button class="btn sm" data-act="open" data-key="${h(r.key)}" ${r.slug ? `data-hash="${h(r.slug)}"` : ''}>Open</button><button class="btn sm hide-sm" data-act="open-beside" data-key="${h(r.key)}" ${r.slug ? `data-hash="${h(r.slug)}"` : ''}>Side by side</button>${ib('info-key', 'info', 'Details for ' + r.title, `data-key="${h(r.key)}"`)}${kind !== 'progress' ? ib('lib-remove', 'x', 'Remove ' + (r.heading || r.title) + ' from this list', `data-kind="${kind}" data-id="${h(r.id)}"`) : ''}</div></td></tr>`).join('')}</tbody></table></div>`;
+}
+
+/* ================= Home ================= */
+function renderHome() {
+  const real = prevSession && prevSession.panes?.some(p => p.tabs?.some(x => fileOf(x.key)));
+  const sess = real ? prevSession : EXAMPLE_SESSION;
+  const titles = sess.panes.flatMap(p => p.tabs || []).filter(x => fileOf(x.key)).map(x => meta(x.key).title);
+  $('#home-session').innerHTML = `<h2 class="section-h" id="hs-h">${icon('restore')}Continue where you left off</h2>
+    <p class="muted small" style="margin:0 0 .5rem">${real ? `Saved ${ago(sess.at)}${sess.split ? ' · side by side' : ''}` : 'No saved session yet. This restores an example session so you can try it.'}</p>
+    <ul class="rows">${titles.map(x => `<li>${icon('file')}<span class="row-main"><span class="row-title">${h(x)}</span></span></li>`).join('')}</ul>
+    <div class="btn-row"><button class="btn btn-primary" data-act="restore">${real ? 'Restore previous session' : 'Restore example session'}</button><button class="btn" data-act="fresh">Start fresh</button></div>`;
+  const rec = S.recent.filter(r => fileOf(r.key)).slice(0, 5);
+  const list = rec.length ? rec : ['sample/README.md', 'sample/Getting-Started.md', 'sample/Guides/Introduction.md'].map(k => ({ key: k }));
+  $('#home-recent').innerHTML = `<h2 class="section-h" id="hr-h">${icon('clock')}${rec.length ? 'Recent documents' : 'Suggested to start with'}</h2>
+    <ul class="rows">${list.map(r => { const m = meta(r.key), pr = S.progress[r.key] || 0; return `<li>${icon('file')}<button class="row-open row-main" data-act="open" data-key="${h(r.key)}"><span class="row-title">${h(m.title)}</span><span class="row-sub">${h(collections[m.cid].name)} › ${h(m.path)}${r.at ? ` · ${ago(r.at)}` : ''}</span></button>${r.at ? `<span class="mini-bar" title="${pr}% read" aria-label="${pr}% read" role="img"><span style="width:${pr}%"></span></span>` : ''}</li>`; }).join('')}</ul>
+    ${rec.length ? '<div class="btn-row"><button class="btn sm" data-act="goto" data-goto="library">View all in Library</button></div>' : ''}`;
+  const cols = Object.values(collections).sort((a, b) => S.favCols.includes(b.id) - S.favCols.includes(a.id));
+  $('#home-cols').innerHTML = `<h2 class="section-h" id="hc-h">${icon('star')}Favorite collections</h2>
+    <ul class="rows">${cols.map(c => { const on = S.favCols.includes(c.id), n = Object.values(c.files).filter(f => f.type === 'md').length; return `<li><button class="star-btn" data-act="fav-col" data-cid="${c.id}" data-fid="fc:${c.id}" aria-pressed="${on}" aria-label="${on ? 'Remove' : 'Add'} ${h(c.name)} ${on ? 'from' : 'to'} favorite collections">${icon('star')}</button><button class="row-open row-main" data-act="open-col" data-cid="${c.id}"><span class="row-title">${h(c.name)}</span><span class="row-sub">${n} documents · ${h(wsOf(c.id)?.name || '')} workspace${c.local ? ' · opened in this tab' : ''}</span></button></li>`; }).join('')}</ul>
+    <p class="muted small" style="margin-top:.5rem">Select the star to pin a collection to the top of this list.</p>`;
+  $('#home-ws').innerHTML = `<h2 class="section-h" id="hw-h">${icon('folder')}Previously opened workspaces</h2>
+    <ul class="rows">${workspaces.map(w => `<li>${icon('folder')}<button class="row-open row-main" data-act="open-ws" data-ws="${w.id}"><span class="row-title">${h(w.name)}</span><span class="row-sub">${w.cols.length} ${w.cols.length === 1 ? 'collection' : 'collections'}${S.wsSeen[w.id] ? ` · last opened ${ago(S.wsSeen[w.id])}` : ' · not opened yet'}</span></button></li>`).join('')}
+    ${S.openedFolders.filter(o => !Object.values(collections).some(c => c.local && c.name === o.name)).map(o => `<li>${icon('folder')}<span class="row-main"><span class="row-title">${h(o.name)}</span><span class="row-sub">Opened ${ago(o.at)} · needs to be opened again</span></span><button class="btn sm" data-act="open-folder">Open again</button></li>`).join('')}</ul>
+    ${S.openedFolders.length ? '<p class="muted small" style="margin-top:.5rem">Browsers can’t reopen folders by themselves, so you need to choose them again. The desktop app is planned to reopen them for you.</p>' : ''}`;
+}
+function restoreSession(sess) {
+  S.ws = sess.ws || 'personal'; S.cid = sess.cid || 'sample';
+  S.panes = [0, 1].map(pi => {
+    const ps = sess.panes?.[pi], tabs = (ps?.tabs || []).filter(x => fileOf(x.key)).map(x => { const tb = newTab(x.key); tb.hist[0].scroll = x.scroll || 0; return tb; });
+    return { tabs, active: tabs[Math.min(ps?.active || 0, tabs.length - 1)]?.id ?? null };
+  });
+  S.split = !!sess.split && S.panes[1].tabs.length > 0; S.ratio = sess.ratio || .5; S.activePane = 0; S.find = [null, null];
+  renderVer++; applyRatio(); setView('reader', { focus: true }); saveSession();
+  toast(sess.example ? 'Example session restored: three documents in tabs.' : 'Previous session restored.');
+}
+function startFresh() {
+  S.panes = [{ tabs: [], active: null }, { tabs: [], active: null }]; S.split = false; S.activePane = 0; S.find = [null, null];
+  applyRatio();
+  const col = collections[S.cid] || collections.sample;
+  const first = Object.keys(col.files).filter(p => col.files[p].type === 'md').sort(readmeFirst)[0];
+  openDoc(keyOf(col.id, first));
+  toast('Started fresh. Your favorites and bookmarks are kept.');
+}
+
+/* ================= Dialogs & toast ================= */
+function openDialog({ title, body, actions = [{ label: 'Close', primary: true }], wide = false }) {
+  const d = $('#dlg');
+  $('#dlg-title').textContent = title;
+  $('#dlg-body').innerHTML = body;
+  const bar = $('#dlg-actions'); bar.innerHTML = '';
+  let focusEl = null;
+  for (const a of actions) {
+    const el = document.createElement(a.href ? 'a' : 'button');
+    if (a.href) { el.href = a.href; el.target = '_blank'; el.rel = 'noopener noreferrer'; } else el.type = 'button';
+    el.className = 'btn' + (a.primary ? (a.danger ? ' btn-danger' : ' btn-primary') : '');
+    el.textContent = a.label;
+    el.addEventListener('click', ev => { if (a.onClick?.(ev) !== true) d.close(); });
+    if (a.autofocus) focusEl = el;
+    bar.append(el);
+  }
+  d.classList.toggle('wide', wide);
+  d.showModal();
+  (focusEl || bar.lastElementChild)?.focus();
+}
+let toastTimer;
+function toast(msg) {
+  const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove('show'), 3600);
+}
+function extDialog(url) {
+  openDialog({
+    title: 'Open this website?',
+    body: `<p>This link leads outside your documents to:</p><p class="url-box">${h(url)}</p><p>It will open in your usual web browser. Folio itself doesn’t connect to websites.</p><p><label class="check"><input type="checkbox" id="ext-dont-ask"> Don’t ask again</label></p><p class="proto-note">${icon('info')}<span>Prototype: the link opens in a new browser tab.</span></p>`,
+    actions: [{ label: 'Cancel' }, { label: 'Open in browser', primary: true, href: url, onClick: () => { if ($('#ext-dont-ask').checked) { setPref('extLinks', 'direct'); toast('Websites will now open without asking. You can change this in Privacy & Help.'); } } }],
+  });
+}
+function brokenDialog(a) {
+  const pi = +(a.closest('.pane')?.dataset.pane ?? 0), m = meta($('#pane-' + pi)._key);
+  const target = a.dataset.broken;
+  openDialog({
+    title: 'This page can’t be found',
+    body: `<p>The link points to <strong>${h(target)}</strong>, but there’s no page with that name in “${h(collections[m.cid].name)}”.</p><p>The page may have been renamed, moved, or not written yet. Your other documents are not affected.</p>`,
+    actions: [{ label: 'Search for similar pages', onClick: () => { S.searchQ = friendly(target); S.scope = 'collection'; setView('search', { focus: true }); } }, { label: 'OK', primary: true }],
+  });
+}
+function remoteDialog(fig) {
+  if (S.prefs.remoteImages === 'block') return setView('help', { focus: true });
+  let host = fig.dataset.src; try { host = new URL(host).host; } catch { }
+  openDialog({
+    title: 'Show a picture from the internet?',
+    body: `<p>This picture is stored on <strong>${h(host)}</strong>, not with your documents.</p><p>To show it, Folio would download it from that website. The website could then see your network address and when you opened this page.</p><p class="url-box">${h(fig.dataset.src)}</p><p class="proto-note">${icon('info')}<span>Prototype: nothing is downloaded. A local stand-in picture is shown instead.</span></p>`,
+    actions: [{ label: 'Keep hidden' }, { label: 'Show picture', primary: true, onClick: () => {
+      fig.innerHTML = `<img src="${STAND_IN}" alt="${h(fig.dataset.alt)}"><figcaption>${h(fig.dataset.alt)} <span class="badge">Prototype stand-in for a picture from ${h(host)}</span></figcaption>`;
+      toast('Picture shown for this visit only.');
+    } }],
+  });
+}
+function infoDialog(key) {
+  const m = meta(key), f = fileOf(key), c = collections[m.cid];
+  const art = renderDoc(key);
+  const links = { doc: $$('a[data-doc]', art).length, ext: $$('a.ext', art).length, broken: $$('a.broken', art).map(a => a.dataset.broken) };
+  const rows = [
+    ['Title', h(m.title)], ['Collection', h(c.name)], ['Location', h(m.path)],
+    ['Type', m.isImg ? 'Image' : 'Markdown document (plain text with formatting marks)'], ['File size', fmtSize(f.size)],
+    ['Last changed', h(fmtDate(f.modified))],
+    ...(m.isImg ? [] : [
+      ['Length', `${m.words.toLocaleString()} words · about ${Math.max(1, Math.round(m.words / 200))} min to read`],
+      ['Sections', String(m.sections.filter(s => s.level >= 2).length)],
+      ['Links', `${links.doc} to other pages · ${links.ext} to websites${links.broken.length ? ` · <span style="color:var(--danger)">${links.broken.length} broken (${links.broken.map(h).join(', ')})</span>` : ''}`],
+      ['Pictures', `${$$('figure img, .missing-img', art).length} stored with the document · ${$$('.remote-img', art).length} from the internet`],
+      ['Your progress', `${S.progress[key] || 0}% read`],
+    ]),
+    ['Access', `${icon('lock')} Read-only. Folio never changes this file.`],
+  ];
+  const fm = Object.entries(m.fm);
+  openDialog({
+    title: 'Document details', wide: true,
+    body: `<table class="info-table"><tbody>${rows.map(([k, v]) => `<tr><th scope="row">${k}</th><td>${v}</td></tr>`).join('')}</tbody></table>${fm.length ? `<p class="dlg-sub">Details written in the document</p><table class="info-table"><tbody>${fm.map(([k, v]) => `<tr><th scope="row">${h(k)}</th><td>${h([].concat(v).join(', '))}</td></tr>`).join('')}</tbody></table>` : ''}`,
+    actions: [{ label: S.favorites.includes(key) ? 'Remove from favorites' : 'Add to favorites', onClick: () => toggleFav(key) }, { label: 'Close', primary: true }],
+  });
+}
+const HELP = {
+  home: ['Getting started', `<p>Choose how to begin:</p><ul><li><strong>Open a document</strong> reads one file from your computer.</li><li><strong>Open a folder</strong> lets you browse a whole collection of linked pages.</li><li><strong>Explore the sample library</strong> opens a small example handbook.</li></ul><p><strong>Restore previous session</strong> reopens the tabs you had last time. <strong>Start fresh</strong> closes them.</p>`],
+  reader: ['Reading documents', `<ul><li>The <strong>left panel</strong> lists folders and documents. Select one to open it in a tab.</li><li>The <strong>right panel</strong> lists the sections of the page. The one you’re reading is highlighted.</li><li><strong>Links</strong> to other pages open in the same tab. Use Back to return. Hold <kbd>Ctrl</kbd> to open a new tab, or <kbd>Shift</kbd> to open it beside this one.</li><li>A link in <span style="color:var(--danger)">red with a dotted underline</span> points to a missing page.</li><li>A link with ${icon('external')} opens a website in your browser.</li><li>The bar under the toolbar shows how far you’ve read.</li></ul>`],
+  search: ['Searching', `<ul><li>Type a word or phrase. Results update as you type.</li><li>Choose <strong>where to search</strong>: everywhere, the current collection, or only the document you’re reading.</li><li>Results show matching sections. “Heading match” means the words appear in a section title.</li><li>Select a result to jump straight to that section, with matches highlighted. Use the arrows in the yellow bar to move between matches.</li></ul>`],
+  library: ['Your library', `<ul><li><strong>Recent</strong>: documents you opened, newest first.</li><li><strong>Favorites</strong>: documents you starred.</li><li><strong>Bookmarks</strong>: individual sections you saved.</li><li><strong>Reading progress</strong>: how far you’ve read each document.</li><li><strong>Search history</strong>: what you searched for.</li></ul><p>Use the filter and sort controls to find things quickly.</p>`],
+  prefs: ['Reading preferences', `<p>Every change is shown immediately in the preview and in your documents. Settings are remembered on this device. Use <strong>Restore default settings</strong> to undo everything.</p>`],
+  help: ['Privacy and help', `<p>This page explains how Folio protects your documents and lists the keyboard shortcuts. It also shows what this prototype simulates and what the final desktop app is planned to do.</p>`],
+};
+function helpDialog() {
+  const [title, body] = HELP[S.view] || HELP.reader;
+  openDialog({ title, body, actions: [{ label: 'All help topics', onClick: () => setView('help', { focus: true }) }, { label: 'Close', primary: true }] });
+}
+
+/* ================= Actions ================= */
+function toggleFav(key) {
+  const on = S.favorites.includes(key);
+  S.favorites = on ? S.favorites.filter(k => k !== key) : [key, ...S.favorites];
+  store.set('favorites', S.favorites);
+  toast(on ? `Removed “${meta(key).title}” from favorites` : `Added “${meta(key).title}” to favorites`);
+  renderAll();
+}
+function toggleBookmark(i) {
+  const key = $('#pane-' + i)._key; if (!key) return;
+  const slug = currentSlug(i) || '', hd = slug && $(`#pane-${i} [data-slug="${CSS.escape(slug)}"]`);
+  const heading = hd ? hd.textContent : meta(key).title;
+  const ex = S.bookmarks.findIndex(b => b.key === key && b.slug === slug);
+  if (ex >= 0) { S.bookmarks.splice(ex, 1); toast(`Bookmark removed: “${heading}”`); }
+  else { S.bookmarks.unshift({ id: 'b' + Date.now(), key, slug, heading, at: Date.now() }); toast(`Bookmarked “${heading}”`); }
+  store.set('bookmarks', S.bookmarks);
+  renderSidebar(); updateBookmarkBtn(i);
+}
+function openBeside(key, hash) {
+  const from = S.split ? S.activePane : 0;
+  if (!S.split) { S.split = true; applyRatio(); }
+  openDoc(key, { mode: 'tab', pane: 1 - from, hash });
+}
+function revealFolder(cid, folder) {
+  S.cid = cid; S.sidebar = true; S.treeFilter = ''; $('#tree-filter').value = '';
+  const parts = folder ? folder.split('/') : [];
+  parts.forEach((_, ix) => S.openFolders.add(cid + ':' + parts.slice(0, ix + 1).join('/')));
+  renderAll();
+  ($(`[data-fid="dir:${CSS.escape(cid + ':' + folder)}"]`) || $(`[data-fid="col:${cid}"]`))?.focus();
+}
+function confirmDialog(title, body, label, fn) {
+  openDialog({ title, body, actions: [{ label: 'Cancel', autofocus: true }, { label, primary: true, danger: true, onClick: fn }] });
+}
+
+function act(b, e) {
+  const a = b.dataset.act, pane = b.closest('.pane') ? +b.closest('.pane').dataset.pane : S.activePane;
+  switch (a) {
+    case 'goto': closePop(); gotoScreen(b.dataset.goto); break;
+    case 'sidebar': if (S.view === 'home') { S.sidebar = true; gotoScreen('reader'); } else { S.sidebar = !S.sidebar; renderChrome(); } break;
+    case 'toc-panel': S.toc = !S.toc; renderChrome(); if (S.toc) renderToc(); break;
+    case 'appearance': togglePop(); break;
+    case 'theme': setPref('theme', b.dataset.themeVal); break;
+    case 'font-step': setPref('fontSize', Math.min(28, Math.max(14, S.prefs.fontSize + +b.dataset.step))); break;
+    case 'help': helpDialog(); break;
+    case 'col': S.cid = b.dataset.cid; S.treeFilter = ''; $('#tree-filter').value = ''; renderSidebar(); break;
+    case 'folder': { const id = b.dataset.folder; S.openFolders.has(id) ? S.openFolders.delete(id) : S.openFolders.add(id); renderSidebar(); break; }
+    case 'open': {
+      const target = b.dataset.pane != null ? +b.dataset.pane : S.activePane;
+      if (e.shiftKey) openBeside(b.dataset.key, b.dataset.hash); else openDoc(b.dataset.key, { pane: target, hash: b.dataset.hash || '' });
+      break;
+    }
+    case 'open-beside': openBeside(b.dataset.key, b.dataset.hash); break;
+    case 'tab': S.panes[pane].active = +b.dataset.tab; S.activePane = pane; renderAll(); saveSession(); break;
+    case 'close-tab': closeTab(pane, +b.dataset.tab); break;
+    case 'back': goHist(pane, -1); break;
+    case 'fwd': goHist(pane, 1); break;
+    case 'fav': toggleFav(curKey(pane)); break;
+    case 'bookmark': toggleBookmark(pane); break;
+    case 'find': S.activePane = pane; S.scope = 'doc'; setView('search'); $('#sq').focus(); break;
+    case 'info': infoDialog($('#pane-' + pane)._key || curKey(pane)); break;
+    case 'info-key': infoDialog(b.dataset.key); break;
+    case 'split': toggleSplit(!S.split); break;
+    case 'split-off': case 'close-pane': toggleSplit(false); break;
+    case 'crumb': revealFolder(b.dataset.cid, b.dataset.folder); break;
+    case 'toc': e.preventDefault(); scrollToSlug(S.activePane, b.dataset.slug); break;
+    case 'toc-twisty': { const id = b.dataset.id; S.tocCollapsed.has(id) ? S.tocCollapsed.delete(id) : S.tocCollapsed.add(id); renderToc(); break; }
+    case 'toc-all': {
+      const key = $('#pane-' + S.activePane)._key; if (!key) break;
+      for (const hd of $('#pane-' + S.activePane)._heads) { const id = key + '#' + hd.dataset.slug; b.dataset.open === '1' ? S.tocCollapsed.delete(id) : S.tocCollapsed.add(id); }
+      renderToc(); break;
+    }
+    case 'find-prev': gotoMark(pane, S.find[pane].idx - 1); break;
+    case 'find-next': gotoMark(pane, S.find[pane].idx + 1); break;
+    case 'find-clear': clearFind(pane); $(`#pane-${pane} .scroller`).focus(); break;
+    case 'remote-img': remoteDialog(b.closest('.remote-img')); break;
+    case 'copy': {
+      const code = b.closest('.code-block').querySelector('code');
+      const fallback = () => { const r = document.createRange(); r.selectNodeContents(code); getSelection().removeAllRanges(); getSelection().addRange(r); toast('Text selected. Press Ctrl + C to copy it.'); };
+      try { navigator.clipboard.writeText(code.textContent).then(() => toast('Copied to the clipboard'), fallback); } catch { fallback(); }
+      break;
+    }
+    case 'res-open': addSearch(S.searchQ); openDoc(b.dataset.key, { find: { q: S.searchQ, hash: b.dataset.hash ?? null } }); break;
+    case 'search-again': S.searchQ = b.dataset.q; addSearch(b.dataset.q); setView('search'); $('#sq').focus(); break;
+    case 'widen-search': S.scope = 'workspace'; renderSearch(); break;
+    case 'lib-tab': S.libTab = b.dataset.tab; renderLibrary(); $(`#libtab-${S.libTab}`).focus(); break;
+    case 'lib-remove': {
+      const { kind, id } = b.dataset;
+      if (kind === 'recent') { S.recent = S.recent.filter(r => r.key !== id); store.set('recent', S.recent); }
+      if (kind === 'favorites') { S.favorites = S.favorites.filter(k => k !== id); store.set('favorites', S.favorites); }
+      if (kind === 'bookmarks') { S.bookmarks = S.bookmarks.filter(x => x.id !== id); store.set('bookmarks', S.bookmarks); }
+      if (kind === 'history') { S.searches = S.searches.filter(x => x.q !== id); store.set('searches', S.searches); }
+      toast('Removed from the list. The document itself is unchanged.');
+      renderAll(); $('#lib-filter').focus(); break;
+    }
+    case 'lib-clear': {
+      const tab = S.libTab;
+      confirmDialog(b.textContent + '?', '<p>This only clears the list in Folio. Your documents are not affected.</p>', 'Clear', () => {
+        if (tab === 'recent') { S.recent = []; store.set('recent', []); }
+        if (tab === 'history') { S.searches = []; store.set('searches', []); }
+        if (tab === 'bookmarks') { S.bookmarks = []; store.set('bookmarks', []); }
+        renderAll(); toast('List cleared.');
+      });
+      break;
+    }
+    case 'fav-col': { const id = b.dataset.cid; S.favCols = S.favCols.includes(id) ? S.favCols.filter(x => x !== id) : [...S.favCols, id]; store.set('favCols', S.favCols); renderHome(); break; }
+    case 'open-col': { const c = collections[b.dataset.cid]; S.ws = wsOf(c.id)?.id || S.ws; S.cid = c.id; S.sidebar = true; const first = Object.keys(c.files).filter(p => c.files[p].type === 'md').sort(readmeFirst)[0]; openDoc(keyOf(c.id, first)); break; }
+    case 'open-ws': switchWs(b.dataset.ws, true); break;
+    case 'restore': restoreSession(prevSession && prevSession.panes?.some(p => p.tabs?.some(x => fileOf(x.key))) ? prevSession : EXAMPLE_SESSION); break;
+    case 'fresh': startFresh(); break;
+    case 'explore': S.ws = 'personal'; S.cid = 'sample'; S.sidebar = !narrow(780); openDoc('sample/README.md', { focusDoc: true }); break;
+    case 'open-file': $('#file-input').click(); break;
+    case 'open-folder': $('#folder-input').click(); break;
+    case 'reset-prefs': S.prefs = { ...DEFAULT_PREFS }; store.set('prefs', S.prefs); renderVer++; applyPrefs(); syncPrefsForm(); toast('Default settings restored.'); break;
+    case 'clear-history':
+      confirmDialog('Clear history?', '<p>This removes recent documents, recent searches and reading progress from this device. Favorites, bookmarks and settings are kept.</p><p>Your documents are not affected.</p>', 'Clear history', () => {
+        S.recent = []; S.searches = []; S.progress = {}; ['recent', 'searches', 'progress'].forEach(k => store.set(k, k === 'progress' ? {} : []));
+        renderAll(); toast('History cleared.');
+      });
+      break;
+    case 'reset-all':
+      confirmDialog('Reset the workspace?', '<p>This closes all tabs and removes favorites, bookmarks, history and settings from this device. Folio will look as it did the first time you opened it.</p><p>Your documents are not affected. This can’t be undone.</p>', 'Reset workspace', () => {
+        store.clear(); prevSession = null;
+        Object.assign(S, { prefs: { ...DEFAULT_PREFS }, favorites: [], favCols: ['sample'], bookmarks: [], recent: [], searches: [], progress: {}, wsSeen: {}, openedFolders: [], split: false, activePane: 0, find: [null, null], panes: [{ tabs: [], active: null }, { tabs: [], active: null }], ws: 'personal', cid: 'sample' });
+        renderVer++; applyPrefs(); applyRatio(); setView('home', { focus: true }); toast('Workspace reset.');
+      });
+      break;
+  }
+}
+function switchWs(id, go) {
+  const w = workspaces.find(x => x.id === id); if (!w) return;
+  S.ws = id; S.cid = w.cols[0] || null; S.wsSeen[id] = Date.now(); store.set('wsSeen', S.wsSeen);
+  S.sidebar = true; S.treeFilter = '';
+  toast(`Switched to the “${w.name}” workspace.`);
+  if (go && S.view === 'home') setView('reader'); else renderAll();
+}
+function togglePop(force) {
+  const pop = $('#appearance-pop'), btn = $('#appearance-btn'), open = force ?? pop.hidden;
+  pop.hidden = !open; btn.setAttribute('aria-expanded', String(open));
+  if (open) pop.querySelector('[aria-pressed="true"]')?.focus();
+}
+function closePop() { if (!$('#appearance-pop').hidden) togglePop(false); }
+
+/* ================= Opening files from this computer ================= */
+async function handleFiles(list, isFolder) {
+  const files = [...list];
+  const md = files.filter(f => /\.(md|markdown|txt)$/i.test(f.name)), imgs = files.filter(f => /\.(png|jpe?g|gif|webp|svg)$/i.test(f.name));
+  if (!md.length) { openDialog({ title: 'No documents found', body: `<p>${isFolder ? 'That folder doesn’t contain' : 'You didn’t choose'} any Markdown documents. Folio reads files whose names end in <strong>.md</strong>, <strong>.markdown</strong> or <strong>.txt</strong>.</p>` }); return; }
+  const name = isFolder ? (files[0].webkitRelativePath.split('/')[0] || 'Opened folder') : 'Opened files';
+  const existing = Object.values(collections).find(c => c.local && c.name === name);
+  const id = existing?.id || 'local' + Date.now();
+  const col = existing || (collections[id] = { id, name, files: {}, local: true });
+  const rel = f => isFolder ? f.webkitRelativePath.split('/').slice(1).join('/') : f.name;
+  const skipped = [];
+  for (const f of md) {
+    if (f.size > 5e6) { skipped.push(f.name); continue; }
+    col.files[rel(f)] = { path: rel(f), type: 'md', text: await f.text(), size: f.size, modified: new Date(f.lastModified).toISOString().slice(0, 10) };
+  }
+  for (const f of imgs) col.files[rel(f)] = { path: rel(f), type: 'img', url: URL.createObjectURL(f), size: f.size, modified: new Date(f.lastModified).toISOString().slice(0, 10) };
+  for (const k of [...metaCache.keys()]) if (k.startsWith(id + '/')) metaCache.delete(k);
+  const ws = curWs(); if (!ws.cols.includes(id)) ws.cols.push(id);
+  Object.keys(col.files).map(dirname).filter(Boolean).forEach(d => d.split('/').forEach((_, ix, arr) => S.openFolders.add(id + ':' + arr.slice(0, ix + 1).join('/'))));
+  if (isFolder) { S.openedFolders = [{ name, at: Date.now() }, ...S.openedFolders.filter(o => o.name !== name)].slice(0, 6); store.set('openedFolders', S.openedFolders); }
+  S.cid = id; S.sidebar = true;
+  const mdPaths = Object.keys(col.files).filter(p => col.files[p].type === 'md').sort(readmeFirst);
+  const toOpen = isFolder ? [mdPaths[0]] : md.filter(f => col.files[rel(f)]).map(rel);
+  toOpen.forEach(p => openDoc(keyOf(id, p)));
+  toast(`${isFolder ? `Opened “${name}”` : `Opened ${toOpen.length} ${toOpen.length === 1 ? 'document' : 'documents'}`}. Files stay in this tab and aren’t uploaded.${skipped.length ? ` Skipped ${skipped.length} very large file(s).` : ''}`);
+}
+
+/* ================= Events ================= */
+document.addEventListener('click', e => {
+  const link = e.target.closest('.doc a');
+  if (link?.closest('.preview-doc')) { e.preventDefault(); return; }
+  if (link) {
+    const pi = +(link.closest('.pane')?.dataset.pane ?? S.activePane);
+    if (link.dataset.ext) { if (S.prefs.extLinks === 'direct') return; e.preventDefault(); extDialog(link.dataset.ext); return; }
+    e.preventDefault();
+    if (link.dataset.broken) return brokenDialog(link);
+    if (link.dataset.anchor) return scrollToSlug(pi, link.dataset.anchor);
+    if (link.dataset.doc) {
+      if (e.shiftKey) return openBeside(link.dataset.doc, link.dataset.hash);
+      return openDoc(link.dataset.doc, { mode: e.ctrlKey || e.metaKey ? 'tab' : 'nav', pane: pi, hash: link.dataset.hash, focusDoc: true });
+    }
+    return;
+  }
+  if (e.target.closest('[data-dlg-close]')) { $('#dlg').close(); return; }
+  const b = e.target.closest('[data-act]');
+  if (b && !b.disabled) act(b, e);
+  if (!e.target.closest('#appearance-pop, #appearance-btn')) closePop();
+  if (!e.target.closest('#gsearch-wrap')) closeSuggest();
+});
+$('#dlg').addEventListener('click', e => { if (e.target === $('#dlg')) $('#dlg').close(); });
+
+document.addEventListener('keydown', e => {
+  const typing = /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable;
+  if ($('#dlg').open) return;
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); $('#gsearch').focus(); }
+  else if (!typing && e.key === '/') { e.preventDefault(); $('#gsearch').focus(); }
+  else if (e.altKey && e.key === 'ArrowLeft' && S.view === 'reader') { e.preventDefault(); goHist(S.activePane, -1); }
+  else if (e.altKey && e.key === 'ArrowRight' && S.view === 'reader') { e.preventDefault(); goHist(S.activePane, 1); }
+  else if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.key === '[') { S.sidebar = !S.sidebar; renderChrome(); }
+  else if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.key === ']') { S.toc = !S.toc; renderChrome(); if (S.toc) renderToc(); }
+  else if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && e.key === '\\') toggleSplit(!S.split);
+  else if (e.key === 'Escape') {
+    if (!$('#appearance-pop').hidden) { togglePop(false); $('#appearance-btn').focus(); }
+    else if (!$('#gsuggest').hidden) closeSuggest();
+    else if (S.view === 'reader' && S.find[S.activePane]) clearFind(S.activePane);
+    else if (narrow(780) && S.sidebar && S.view !== 'home') { S.sidebar = false; renderChrome(); }
+  }
+});
+// Arrow keys move between tabs (document tabs and library tabs)
+document.addEventListener('keydown', e => {
+  if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+  const cur = e.target.closest('.tab-main, .lib-tabs [role="tab"]'); if (!cur || e.altKey) return;
+  const all = $$(cur.classList.contains('tab-main') ? '.tab-main' : '[role="tab"]', cur.closest('.tabs, .lib-tabs'));
+  const next = all[(all.indexOf(cur) + (e.key === 'ArrowRight' ? 1 : -1) + all.length) % all.length];
+  e.preventDefault(); next.focus(); if (next.getAttribute('role') === 'tab') next.click();
+});
+
+// Top-bar search with suggestions
+const gs = $('#gsearch');
+gs.addEventListener('input', () => suggest(gs.value));
+gs.addEventListener('focus', () => gs.value && suggest(gs.value));
+gs.addEventListener('keydown', e => {
+  const list = $('#gsuggest');
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+    if (list.hidden) { suggest(gs.value); if (list.hidden) return; }
+    e.preventDefault();
+    sugIdx = (sugIdx + (e.key === 'ArrowDown' ? 1 : -1) + sugItems.length) % sugItems.length;
+    $$('li', list).forEach((li, j) => li.setAttribute('aria-selected', String(j === sugIdx)));
+    gs.setAttribute('aria-activedescendant', 'sug-' + sugIdx);
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (!gs.value.trim()) return;
+    sugIdx >= 0 && !list.hidden ? chooseSuggest(sugIdx) : runGlobalSearch(gs.value);
+  }
+});
+$('#gsuggest').addEventListener('mousedown', e => e.preventDefault());
+$('#gsuggest').addEventListener('click', e => { const li = e.target.closest('[data-sug]'); if (li) chooseSuggest(+li.dataset.sug); });
+
+// Search view
+$('#search-form').addEventListener('submit', e => { e.preventDefault(); addSearch(S.searchQ); renderResults(); });
+let searchTimer;
+$('#sq').addEventListener('input', e => { S.searchQ = e.target.value; clearTimeout(searchTimer); searchTimer = setTimeout(renderResults, 120); });
+$$('[name="scope"]').forEach(r => r.addEventListener('change', () => { S.scope = r.value; renderResults(); }));
+$('#opt-headings').addEventListener('change', e => { S.headingsOnly = e.target.checked; renderResults(); });
+$('#opt-whole').addEventListener('change', e => { S.whole = e.target.checked; renderResults(); });
+$('#opt-folder').addEventListener('change', e => { S.folder = e.target.value; renderResults(); });
+
+// Library controls
+$('#lib-filter').addEventListener('input', e => { S.libFilter = e.target.value; renderLibrary(); });
+$('#lib-sort').addEventListener('change', e => { S.libSort = e.target.value; renderLibrary(); });
+
+// Sidebar filter & workspace selector
+$('#tree-filter').addEventListener('input', e => { S.treeFilter = e.target.value; renderSidebar(); });
+$('#ws-select').addEventListener('change', e => switchWs(e.target.value, false));
+
+// Preferences & privacy controls
+const PREF_FIELDS = { 'p-size': ['fontSize', Number], 'p-width': ['width', Number], 'p-lh': ['lineHeight', Number], 'p-zoom': ['zoom', Number], 'p-font': ['font', String], 'p-lang': ['lang', String] };
+$('#prefs-form').addEventListener('submit', e => e.preventDefault());
+$('#prefs-form').addEventListener('input', e => {
+  const el = e.target;
+  if (el.name === 'theme') setPref('theme', el.value);
+  else if (el.id === 'p-contrast') setPref('contrast', el.checked);
+  else if (el.id === 'p-motion') setPref('motion', el.checked ? 'reduce' : 'system');
+  else if (PREF_FIELDS[el.id]) { const [k, conv] = PREF_FIELDS[el.id]; setPref(k, conv(el.value)); }
+});
+$$('[name="ext"]').forEach(r => r.addEventListener('change', () => { setPref('extLinks', r.value); toast('Link setting saved.'); }));
+$$('[name="remote"]').forEach(r => r.addEventListener('change', () => { setPref('remoteImages', r.value); toast('Picture setting saved.'); }));
+
+// Files
+$('#file-input').addEventListener('change', e => { handleFiles(e.target.files, false); e.target.value = ''; });
+$('#folder-input').addEventListener('change', e => { handleFiles(e.target.files, true); e.target.value = ''; });
+
+// Panes: scrolling, activation and the resize divider
+for (const i of [0, 1]) {
+  const el = $('#pane-' + i);
+  el.innerHTML = paneShell(i);
+  $('.scroller', el).addEventListener('scroll', () => {
+    const e = curEntry(activeTab(i)); if (e) e.scroll = $('.scroller', el).scrollTop;
+    updateProgress(i); saveLater();
+  }, { passive: true });
+  const activate = () => { if (S.activePane !== i && S.split) { S.activePane = i; $$('.pane').forEach(p => p.classList.toggle('is-active', S.split && +p.dataset.pane === i)); renderToc(); renderSidebar(); } };
+  el.addEventListener('pointerdown', activate);
+  el.addEventListener('focusin', activate);
+}
+const divider = $('#divider');
+divider.addEventListener('pointerdown', e => {
+  divider.setPointerCapture(e.pointerId);
+  const r = $('#panes').getBoundingClientRect();
+  const move = ev => setRatio((ev.clientX - r.left) / r.width);
+  const up = () => { divider.removeEventListener('pointermove', move); divider.removeEventListener('pointerup', up); saveSession(); };
+  divider.addEventListener('pointermove', move); divider.addEventListener('pointerup', up);
+});
+divider.addEventListener('keydown', e => {
+  const d = { ArrowLeft: -.05, ArrowRight: .05, Home: -1, End: 1 }[e.key];
+  if (d == null) return;
+  e.preventDefault(); setRatio(S.ratio + d); saveSession();
+});
+divider.addEventListener('dblclick', () => { setRatio(.5); saveSession(); });
+
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => applyPrefs());
+// Diagrams: the drawing library loads in the background; redraw waiting diagrams once it arrives (or give up after 20 s)
+const mmStart = Date.now(), mmPoll = setInterval(() => {
+  if (window.mermaid || Date.now() - mmStart > 20000) { clearInterval(mmPoll); if (!window.mermaid) window.__mmFailed = true; window.__mmReady(); }
+}, 300);
+window.__mmReady = () => { for (const i of [0, 1]) { const el = $('#pane-' + i); if ($('.diagram[data-pending]', el)) { el._ver = -1; if (S.view === 'reader') renderPane(i); } } };
+
+/* ================= Start ================= */
+loadSamples();
+$('#pop-themes').innerHTML = THEMES.map(x => swatch(x, false)).join('');
+$('#theme-choices').innerHTML = THEMES.map(x => swatch(x, true)).join('');
+for (const c of Object.values(collections)) Object.keys(c.files).map(dirname).filter(Boolean).forEach(d => S.openFolders.add(c.id + ':' + d));
+S.wsSeen.personal ||= Date.now(); store.set('wsSeen', S.wsSeen);
+applyPrefs();
+syncPrefsForm();
+setView('home');
+</script>

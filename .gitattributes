@@ -1,0 +1,5 @@
+# Fixtures are checked out with CRLF on every platform, so tests see the same bytes on Windows, macOS and Linux.
+# Text types only: a future binary fixture must not be rewritten.
+app/tests/fixtures/**/*.md text eol=crlf
+app/tests/fixtures/**/*.svg text eol=crlf
+app/tests/fixtures/**/*.json text eol=crlf

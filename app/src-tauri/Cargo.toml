@@ -1,0 +1,44 @@
+[package]
+name = "markvy"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "markvy_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+# Never set panic = "abort": commands rely on catching panics (spec §5).
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+dunce = "1"
+percent-encoding = "2"
+pulldown-cmark = { version = "0.12", default-features = false }
+unicode-properties = { version = "0.1", default-features = false, features = ["general-category"] }
+notify-debouncer-mini = "0.4"
+ureq = { version = "2", default-features = false, features = ["tls"] }
+base64 = "0.22"
+url = "2"
+open = { version = "5", features = ["shellexecute-on-windows"] }
+sha2 = "0.10"
+trash = "5"
+
+# Crash watching (amendment A12); the same versions Tauri already uses.
+[target.'cfg(windows)'.dependencies]
+webview2-com = "0.39"
+windows-sys = { version = "0.59", features = ["Win32_Storage_FileSystem"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+webkit2gtk = { version = "2.0", features = ["v2_40"] }
+
+[features]
+# Test-only commands for the whole-app tests (spec amendment A13). Never enabled in release builds.
+e2e = []
+
+[dev-dependencies]
+tempfile = "3"

@@ -1,0 +1,10 @@
+graphify-out/
+node_modules/
+target/
+dist/
+app/src-tauri/gen/schemas/
+app/e2e/.driver/
+app/dist-webtest/
+app/test-results/
+app/playwright-report/
+/release/

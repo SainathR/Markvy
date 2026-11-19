@@ -1,0 +1,94 @@
+
+/* Layout: a desktop window on a desk — prototype strip, app bar, then three panels: library tree | reading page | contents */
+:root {
+  --desk: #E3E6DE; --paper: #F7F8F4; --page: #FFFFFF; --panel: #EEF0EA; --hover: #E4E7DF; --line: #D8DBD2;
+  --ink: #1C211E; --ink-2: #4A524C; --ink-3: #646C66;
+  --accent: #2E6A54; --accent-ink: #FFFFFF; --accent-soft: #DFEBE4;
+  --mark: #FBE49A; --mark-ink: #1C211E;
+  --info: #2B5C8A; --info-soft: #E1EBF4; --tip: #2E6A54; --tip-soft: #DFEBE4;
+  --imp: #5E4A96; --imp-soft: #ECE7F6; --warn: #8A5300; --warn-soft: #FAEFD9;
+  --danger: #A3352A; --danger-soft: #F8E3E0; --danger-ink: #FFFFFF;
+  --code-bg: #F0F2EC; --focus: #1B5FD0; --strip: #1C211E; --strip-ink: #E9ECE6;
+  --font-ui: "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Literata", Georgia, "Times New Roman", serif;
+  --font-sans: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-easy: "Lexend", Verdana, Tahoma, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  --read-font: var(--font-serif); --read-size: 1.125rem; --read-width: 68ch; --read-lh: 1.7;
+  --shadow: 0 1px 2px rgb(20 30 25 / .06), 0 8px 28px rgb(20 30 25 / .08);
+  --speed: 160ms;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --desk: #0B0D0C; --paper: #141815; --page: #181C19; --panel: #1C211E; --hover: #252C27; --line: #2D352F;
+    --ink: #E3E7E2; --ink-2: #B4BCB5; --ink-3: #8F9890;
+    --accent: #7BC3A5; --accent-ink: #0D1A14; --accent-soft: #1E392E;
+    --mark: #6A5A14; --mark-ink: #FFF7D9;
+    --info: #8DB9E6; --info-soft: #1A2938; --tip: #7BC3A5; --tip-soft: #1E392E;
+    --imp: #B9A6EE; --imp-soft: #2A2340; --warn: #E9B65C; --warn-soft: #2D2413;
+    --danger: #F08C80; --danger-soft: #3A1E1B; --danger-ink: #1A0B09;
+    --code-bg: #1F2521; --focus: #8AB4FF; --strip: #E3E7E2; --strip-ink: #141815;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --desk: #0B0D0C; --paper: #141815; --page: #181C19; --panel: #1C211E; --hover: #252C27; --line: #2D352F;
+  --ink: #E3E7E2; --ink-2: #B4BCB5; --ink-3: #8F9890;
+  --accent: #7BC3A5; --accent-ink: #0D1A14; --accent-soft: #1E392E;
+  --mark: #6A5A14; --mark-ink: #FFF7D9;
+  --info: #8DB9E6; --info-soft: #1A2938; --tip: #7BC3A5; --tip-soft: #1E392E;
+  --imp: #B9A6EE; --imp-soft: #2A2340; --warn: #E9B65C; --warn-soft: #2D2413;
+  --danger: #F08C80; --danger-soft: #3A1E1B; --danger-ink: #1A0B09;
+  --code-bg: #1F2521; --focus: #8AB4FF; --strip: #E3E7E2; --strip-ink: #141815;
+  color-scheme: dark;
+}
+/* Colour themes: each sits on the light or dark base (data-theme) and swaps neutrals + accent */
+:root[data-palette="sepia"] {
+  --desk: #E2D7C3; --paper: #F4ECDD; --page: #FBF5E9; --panel: #EDE3D0; --hover: #E5D9C3; --line: #D8CBB2;
+  --ink: #3B2F22; --ink-2: #5E4F3D; --ink-3: #6F5E49; --accent: #8A4B22; --accent-ink: #FFF8EE; --accent-soft: #F0DCC8;
+  --tip: #8A4B22; --tip-soft: #F0DCC8; --code-bg: #EFE5D3; --strip: #3B2F22; --strip-ink: #F4ECDD;
+}
+:root[data-palette="slate"] {
+  --desk: #DCE2EA; --paper: #F4F6F9; --page: #FFFFFF; --panel: #EBEFF4; --hover: #E1E7EE; --line: #D3DAE3;
+  --ink: #1A2230; --ink-2: #465163; --ink-3: #5B6779; --accent: #2457A6; --accent-ink: #FFFFFF; --accent-soft: #DDE8F7;
+  --tip: #2457A6; --tip-soft: #DDE8F7; --code-bg: #EEF2F7; --strip: #1A2230; --strip-ink: #E8EDF3;
+}
+:root[data-palette="rose"] {
+  --desk: #E9DEDF; --paper: #FAF5F5; --page: #FFFFFF; --panel: #F3EAEB; --hover: #EDE1E2; --line: #E0D2D4;
+  --ink: #2A1F22; --ink-2: #57474B; --ink-3: #6C5A5F; --accent: #9C3554; --accent-ink: #FFFFFF; --accent-soft: #F5DDE4;
+  --tip: #9C3554; --tip-soft: #F5DDE4; --code-bg: #F5EEEF; --strip: #2A1F22; --strip-ink: #F5ECEE;
+}
+:root[data-palette="dusk"] {
+  --desk: #0A0E16; --paper: #121826; --page: #161D2D; --panel: #1A2234; --hover: #232D42; --line: #2A3550;
+  --ink: #E2E7F0; --ink-2: #B3BDCF; --ink-3: #8D98AD; --accent: #8FB4FF; --accent-ink: #0B1426; --accent-soft: #1E2D4F;
+  --tip: #8FB4FF; --tip-soft: #1E2D4F; --code-bg: #1C2438; --strip: #E2E7F0; --strip-ink: #121826;
+}
+:root[data-palette="ember"] {
+  --desk: #0D0B09; --paper: #171411; --page: #1C1815; --panel: #211C18; --hover: #2B2520; --line: #362E27;
+  --ink: #ECE4DA; --ink-2: #C2B6A8; --ink-3: #9A8E80; --accent: #E8A75A; --accent-ink: #1C1206; --accent-soft: #3A2A17;
+  --tip: #E8A75A; --tip-soft: #3A2A17; --code-bg: #241F1A; --strip: #ECE4DA; --strip-ink: #171411;
+}
+/* High contrast: pure black on white (or the reverse), strong lines, no tinted surfaces */
+:root[data-contrast="high"] {
+  --desk: #FFFFFF; --paper: #FFFFFF; --page: #FFFFFF; --panel: #FFFFFF; --hover: #E8E8E8; --line: #000000;
+  --ink: #000000; --ink-2: #000000; --ink-3: #1A1A1A; --accent: #00408F; --accent-ink: #FFFFFF; --accent-soft: #D6E4FF;
+  --mark: #FFE500; --mark-ink: #000000; --code-bg: #F2F2F2; --focus: #C2002F;
+  --info: #00408F; --info-soft: #FFFFFF; --tip: #005A2B; --tip-soft: #FFFFFF; --imp: #4B0082; --imp-soft: #FFFFFF;
+  --warn: #6B3D00; --warn-soft: #FFFFFF; --danger: #A00000; --danger-soft: #FFFFFF; --strip: #000000; --strip-ink: #FFFFFF;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-contrast="high"]:not([data-theme="light"]) {
+    --desk: #000000; --paper: #000000; --page: #000000; --panel: #000000; --hover: #262626; --line: #FFFFFF;
+    --ink: #FFFFFF; --ink-2: #FFFFFF; --ink-3: #EDEDED; --accent: #FFD60A; --accent-ink: #000000; --accent-soft: #3A3000;
+    --mark: #FFD60A; --mark-ink: #000000; --code-bg: #121212; --focus: #5CE1FF;
+    --info: #9CD3FF; --info-soft: #000000; --tip: #8BF0B5; --tip-soft: #000000; --imp: #D9C2FF; --imp-soft: #000000;
+    --warn: #FFC861; --warn-soft: #000000; --danger: #FF8A80; --danger-soft: #000000; --strip: #FFFFFF; --strip-ink: #000000;
+  }
+}
+:root[data-theme="dark"][data-contrast="high"] {
+  --desk: #000000; --paper: #000000; --page: #000000; --panel: #000000; --hover: #262626; --line: #FFFFFF;
+  --ink: #FFFFFF; --ink-2: #FFFFFF; --ink-3: #EDEDED; --accent: #FFD60A; --accent-ink: #000000; --accent-soft: #3A3000;
+  --mark: #FFD60A; --mark-ink: #000000; --code-bg: #121212; --focus: #5CE1FF;
+  --info: #9CD3FF; --info-soft: #000000; --tip: #8BF0B5; --tip-soft: #000000; --imp: #D9C2FF; --imp-soft: #000000;
+  --warn: #FFC861; --warn-soft: #000000; --danger: #FF8A80; --danger-soft: #000000; --strip: #FFFFFF; --strip-ink: #000000;
+}

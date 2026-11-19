@@ -1,0 +1,17 @@
+# Markvy changes files only through edit.rs (spec A16); library.rs and log.rs write its own data. They opt out with #![allow(clippy::disallowed_methods)].
+disallowed-methods = [
+  { path = "std::fs::write", reason = "read-only app (spec §6)" },
+  { path = "std::fs::File::create", reason = "read-only app (spec §6)" },
+  { path = "std::fs::OpenOptions::write", reason = "read-only app (spec §6)" },
+  { path = "std::fs::OpenOptions::append", reason = "read-only app (spec §6)" },
+  { path = "std::fs::OpenOptions::create", reason = "read-only app (spec §6)" },
+  { path = "std::fs::create_dir", reason = "read-only app (spec §6)" },
+  { path = "std::fs::create_dir_all", reason = "read-only app (spec §6)" },
+  { path = "std::fs::remove_file", reason = "read-only app (spec §6)" },
+  { path = "std::fs::remove_dir", reason = "read-only app (spec §6)" },
+  { path = "std::fs::remove_dir_all", reason = "read-only app (spec §6)" },
+  { path = "std::fs::rename", reason = "read-only app (spec §6)" },
+  { path = "std::fs::copy", reason = "read-only app (spec §6)" },
+  { path = "std::fs::hard_link", reason = "read-only app (spec §6)" },
+  { path = "std::fs::set_permissions", reason = "read-only app (spec §6)" },
+]

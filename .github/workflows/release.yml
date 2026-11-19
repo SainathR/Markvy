@@ -1,0 +1,131 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            bundles: msi,nsis
+            args: ''
+          - os: macos-latest
+            bundles: app,dmg
+            args: --target universal-apple-darwin
+          - os: ubuntu-22.04
+            bundles: deb,appimage
+            args: ''
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: app
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ runner.os == 'macOS' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      - name: Linux system libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+      - run: npm ci
+      # Secrets are read only by the two signing steps below, never by npm ci or the build. The step `if:`
+      # cannot read secrets, so this step turns "does the secret exist" into a plain true/false output
+      # (a secrets expression is allowed in a step's env:; only the comparison result is stored, never the secret).
+      - name: Check which secrets exist
+        id: have
+        env:
+          HAS_WINDOWS: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
+          HAS_APPLE: ${{ secrets.APPLE_CERTIFICATE != '' }}
+        run: |
+          echo "windows=$HAS_WINDOWS" >> "$GITHUB_OUTPUT"
+          echo "apple=$HAS_APPLE" >> "$GITHUB_OUTPUT"
+      - name: Windows signing certificate
+        if: runner.os == 'Windows' && steps.have.outputs.windows == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'markvy.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $password = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item $pfx
+          @{ bundle = @{ windows = @{ certificateThumbprint = $cert.Thumbprint; digestAlgorithm = 'sha256'; timestampUrl = 'http://timestamp.digicert.com' } } } |
+            ConvertTo-Json -Depth 5 | Set-Content -Path src-tauri/tauri.signing.json -Encoding utf8
+          "SIGN_ARGS=--config src-tauri/tauri.signing.json" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          "SIGNED=yes" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: macOS signing and notarization identity
+        if: runner.os == 'macOS' && steps.have.outputs.apple == 'true'
+        env:
+          SECRET_APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          SECRET_APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          SECRET_APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          SECRET_APPLE_ID: ${{ secrets.APPLE_ID }}
+          SECRET_APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          SECRET_APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          {
+            echo "APPLE_CERTIFICATE<<__MARKVY_EOF__"
+            printf '%s\n' "$SECRET_APPLE_CERTIFICATE"
+            echo "__MARKVY_EOF__"
+            echo "APPLE_CERTIFICATE_PASSWORD=$SECRET_APPLE_CERTIFICATE_PASSWORD"
+            echo "APPLE_SIGNING_IDENTITY=$SECRET_APPLE_SIGNING_IDENTITY"
+            echo "APPLE_ID=$SECRET_APPLE_ID"
+            echo "APPLE_PASSWORD=$SECRET_APPLE_PASSWORD"
+            echo "APPLE_TEAM_ID=$SECRET_APPLE_TEAM_ID"
+            echo "SIGNED=yes"
+          } >> "$GITHUB_ENV"
+      - name: Build installers
+        run: npm run tauri build -- --bundles ${{ matrix.bundles }} ${{ matrix.args }} $SIGN_ARGS
+      - name: Collect installers and checksums
+        run: |
+          mkdir -p ../out
+          find src-tauri/target -path '*/release/bundle/*' -type f \( -name '*.msi' -o -name '*-setup.exe' -o -name '*.dmg' -o -name '*.deb' -o -name '*.AppImage' \) -exec cp {} ../out/ \;
+          if [ -z "$(ls -A ../out)" ]; then echo "::error::No installers were built, so there is nothing to release."; exit 1; fi
+          (cd ../out && (sha256sum * 2>/dev/null || shasum -a 256 *)) > ../SHA256SUMS-${{ runner.os }}.txt
+          mv ../SHA256SUMS-${{ runner.os }}.txt ../out/
+          cat ../out/SHA256SUMS-${{ runner.os }}.txt
+          if [ "$RUNNER_OS" = "Linux" ]; then
+            echo "### Linux: signed: not applicable (SHA-256 checksums, spec §8)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "### ${{ runner.os }}: signed: ${SIGNED:-no}" >> "$GITHUB_STEP_SUMMARY"
+            if [ "${SIGNED:-no}" != "yes" ]; then echo "Unsigned build: the signing secrets are not set (spec §9)." >> "$GITHUB_STEP_SUMMARY"; fi
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: markvy-${{ runner.os }}
+          path: out/
+
+  publish:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+      - name: Draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd out && cat SHA256SUMS-*.txt > SHA256SUMS.txt
+          gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --draft --title "Markvy $GITHUB_REF_NAME" --notes "Check the signing status in the workflow summary before publishing." *

@@ -1,0 +1,30 @@
+{
+  "single": [
+    ["Hello World", "hello-world"],
+    ["  Getting   Started  ", "getting-started"],
+    ["What's new?", "whats-new"],
+    ["Café & Crème", "café-crème"],
+    ["Step 1: Install", "step-1-install"],
+    ["already-hyphenated title", "already-hyphenated-title"],
+    ["a - b", "a---b"],
+    ["100% Done!", "100-done"],
+    ["Привет мир", "привет-мир"],
+    ["日本語の見出し", "日本語の見出し"],
+    ["Emoji 🎉 Party", "emoji-party"],
+    ["Trailing ?", "trailing-"],
+    ["?Leading", "leading"],
+    ["Wi-Fi & printing", "wi-fi-printing"],
+    ["snake_case name", "snakecase-name"],
+    ["हिन्दी की", "हनद-क"],
+    ["كِتَاب", "كتاب"],
+    ["a  b", "a-b"],
+    ["﻿x y　", "x-y"],
+    ["ab", "ab"],
+    ["a​b", "ab"],
+    ["Ⅷ ² x", "ⅷ-²-x"]
+  ],
+  "sequences": [
+    { "in": ["Example", "Example", "Example 1"], "out": ["example", "example-1", "example-1-1"] },
+    { "in": ["A", "A-1", "A"], "out": ["a", "a-1", "a-2"] }
+  ]
+}
