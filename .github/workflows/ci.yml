@@ -100,10 +100,21 @@ jobs:
           $p = Start-Process src-tauri/target/release/markvy.exe -PassThru -RedirectStandardOutput diag-out.txt -RedirectStandardError diag-err.txt
           Start-Sleep -Seconds 20
           "app still running: $(-not $p.HasExited); exit code: $($p.ExitCode)"
-          Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Format-Table Id, StartTime | Out-String
+          "== WebView2 browser process command lines"
+          Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" | Where-Object CommandLine -notmatch '--type=' | ForEach-Object CommandLine
           try { (Invoke-WebRequest http://127.0.0.1:9222/json/version -UseBasicParsing).Content } catch { "no DevTools on 9222: $_" }
           Get-Content diag-out.txt, diag-err.txt -ErrorAction SilentlyContinue
-          Get-ChildItem $env:MARKVY_DATA_DIR, "$env:LOCALAPPDATA\com.sainath.markvy" -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 40 -ExpandProperty FullName
+          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+          "== Edge and WebView2 policies"
+          foreach ($k in 'HKLM:\SOFTWARE\Policies\Microsoft\Edge', 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2', 'HKCU:\SOFTWARE\Policies\Microsoft\Edge', 'HKCU:\SOFTWARE\Policies\Microsoft\Edge\WebView2') {
+            if (Test-Path $k) { "-- $k"; Get-ItemProperty $k | Out-String; Get-ChildItem $k -Recurse | ForEach-Object { "-- $($_.Name)"; Get-ItemProperty $_.PSPath | Out-String } } }
+          "== Elevated: $(([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"
+          "== Same start with a fresh WebView2 data folder"
+          $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $env:TEMP 'markvy-diag-wv2'
+          $p = Start-Process src-tauri/target/release/markvy.exe -PassThru
+          Start-Sleep -Seconds 20
+          try { (Invoke-WebRequest http://127.0.0.1:9222/json/version -UseBasicParsing).Content } catch { "no DevTools on 9222: $_" }
+          Get-ChildItem $env:WEBVIEW2_USER_DATA_FOLDER -Filter DevToolsActivePort -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName
           if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
       # TEMPORARY: Linux start-up takes about 30 s on the runner (first paint at 30.8 s). Times one start per environment.
       - name: Linux start-up probe (temporary)
