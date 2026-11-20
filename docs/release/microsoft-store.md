@@ -50,20 +50,14 @@ Required for every desktop (Win32) app, whatever it collects (policy 10.5.1). Th
 
 ### 4. Build the MSIX package
 
-Use Microsoft's `winapp` tool, which has a guide for Tauri apps: [winapp CLI with Tauri](https://learn.microsoft.com/en-us/windows/apps/dev-tools/winapp-cli/guides/tauri).
+`scripts\windows\Build-MarkvyMsix.ps1` packs the release build with the Windows SDK's `makeappx` (install the Windows 10/11 SDK). Don't use the MSIX Packaging Tool to capture the installer: a capture also records whatever else changed on the PC (browser data, sign-in caches, your own library).
 
-1. Install the tool: `winget install microsoft.winappcli --source winget`
-2. Build Markvy: in `app`, run `npm run tauri build -- --no-bundle`.
-3. Make a staging folder. Copy into it `markvy.exe` from `<target>\release\` and the `sample-wiki` folder from `app\tests\fixtures\sample-wiki` (Markvy ships it as a resource; `winapp pack` copies only what is in the folder).
-4. In the repository, run `winapp init` once. It creates `Package.appxmanifest` and an `Assets` folder. In the manifest:
-   - Set `Identity Name`, `Publisher` and `PublisherDisplayName` to the three values from step 2.
-   - Set `Version` to `0.1.0.0`. The fourth number must always be 0.
-   - Keep the `runFullTrust` capability. Markvy is a normal desktop app and needs it.
-   - Use the logos in `app/src-tauri/icons` (`StoreLogo.png`, `Square44x44Logo.png`, `Square150x150Logo.png`, `Square310x310Logo.png` and the others are already there).
-5. Pack: `winapp pack <staging folder>`. Don't sign it for the Store; the Store signs it. (For a test install on your own PC, add `--cert devcert.pfx`.)
-6. Install the test-signed package on a clean Windows 11 PC and check the smoke test in `release-checklist.md` section 4. Check especially that the sample library opens, that preferences and drafts survive a restart, and that uninstalling removes Markvy.
-
-Commit `Package.appxmanifest` and the staging steps once they work, so every release is built the same way.
+1. Build Markvy: in `app`, run `npm run tauri build -- --no-bundle`. (The script looks for `markvy.exe` in `%LOCALAPPDATA%\folio-target\release`; pass `-Exe` for another place.)
+2. Pack with the three values from step 2:
+   `.\scripts\windows\Build-MarkvyMsix.ps1 -IdentityName '<Name>' -Publisher 'CN=<Publisher>' -PublisherDisplayName '<PublisherDisplayName>'`
+   It writes `release\<version>-msix\Markvy_<version>.0_x64.msix`, unsigned: the Store signs it. The version comes from `tauri.conf.json` with a fourth number 0; pass `-Version` to override it. It includes the sample library and keeps the `runFullTrust` capability.
+3. For a test install on your own PC, add `-Sign`. It signs with a self-signed certificate whose subject is the publisher and exports its public part, `Markvy-test-signing.cer`. Trust it once from an administrator PowerShell (`Import-Certificate -FilePath <cer> -CertStoreLocation Cert:\LocalMachine\TrustedPeople`), then install with `Add-AppxPackage <msix>`.
+4. Check the smoke test in `release-checklist.md` section 4. Check especially that the sample library opens, that preferences and drafts survive a restart, and that uninstalling removes Markvy.
 
 **What changes under MSIX.** Windows gives Markvy a private copy of its settings folder (drafts, library, preferences), deleted on uninstall. Documents the person opens are read and saved in place as usual. WebView2 is part of Windows 11 and is on almost every Windows 10 PC ([WebView2 distribution](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/distribution)).
 

@@ -1,7 +1,7 @@
 // @vitest-environment node
 // Guards for the Microsoft Store MSI tooling in scripts/windows (docs/microsoft-store).
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -15,6 +15,7 @@ const files = {
   silent: 'scripts/windows/Test-MarkvySilentInstall.ps1',
   bundleware: 'scripts/windows/Test-MarkvyBundleware.ps1',
   matrix: 'scripts/windows/Test-MarkvyMicrosoftStore.ps1',
+  msix: 'scripts/windows/Build-MarkvyMsix.ps1',
   workflow: '.github/workflows/microsoft-store-msi-validation.yml',
 };
 const text = (key) => readFileSync(join(repo, files[key]), 'utf8');
@@ -58,6 +59,19 @@ describe('Store MSI scripts', () => {
     expect(m).toContain('never removes an existing installation');
   });
 
+  it('packs the MSIX from the build output (no capture), full trust, unsigned unless -Sign, never overwriting without -Force', () => {
+    const m = text('msix');
+    expect(m).toContain('makeappx.exe');
+    expect(m).toContain('pack /d $stage /p $out');
+    expect(m).toContain('EntryPoint="Windows.FullTrustApplication"');
+    expect(m).toContain('<rescap:Capability Name="runFullTrust" />');
+    expect(m).toContain('if ($Sign)');
+    expect(m).toContain('-not $Force');
+    expect(m).toContain('$conf.bundle.resources'); // the sample library ships as in the MSI
+    expect(m).toContain('[Parameter(Mandatory)][ValidatePattern(\'^CN=\')][string]$Publisher');
+    expect(m).not.toMatch(/Export-PfxCertificate/); // the test key never leaves the certificate store
+  });
+
   it('the workflow runs the scripts in this folder', () => {
     const w = text('workflow');
     expect(w).toContain('./scripts/windows/Build-MarkvyMicrosoftStore.ps1');
@@ -73,6 +87,13 @@ describe.runIf(process.platform === 'win32' && shell)('Store MSI scripts on Wind
     const missing = join(dir, 'missing.msi');
     expect(ps(files.silent, ['-MsiPath', missing, '-LogDirectory', dir]).status).toBe(2);
     expect(ps(files.metadata, ['-MsiPath', missing]).status).toBe(2);
+  });
+
+  it('the MSIX packer rejects a missing markvy.exe with exit code 2 and writes nothing', () => {
+    const r = ps(files.msix, ['-IdentityName', 'Markvy', '-Publisher', 'CN=Test', '-PublisherDisplayName', 'Test', '-Exe', join(dir, 'missing.exe'), '-OutputDirectory', join(dir, 'msix')]);
+    expect(r.status).toBe(2);
+    expect(r.stdout).toContain('markvy.exe not found');
+    expect(existsSync(join(dir, 'msix'))).toBe(false);
   });
 
   it('the bundleware check saves a baseline and, with nothing installed in between, finds no Markvy entry', () => {
