@@ -23,6 +23,8 @@ export { assetUrl };
 
 const systemDark = () => typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
 const systemReducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+// Up to this width the contents panel lies over the document (app.css, "Narrow screens"), hiding its right side and Edit.
+const tocOverlays = () => typeof matchMedia === 'function' && matchMedia('(max-width: 1080px)').matches;
 
 export class AppStore {
   collections = $state<Collection[]>([]);
@@ -32,7 +34,7 @@ export class AppStore {
   ws = $state<W.WorkspaceState>(W.emptyWorkspace());
   view = $state<View>('home');
   sidebarOpen = $state(true);
-  tocOpen = $state(true);
+  tocOpen = $state(!tocOverlays()); // starts closed where it would cover the document
   notice = $state<string | null>(null);
   headings = $state<[HeadingInfo[], HeadingInfo[]]>([[], []]);
   currentSlugs = $state<[string | null, string | null]>([null, null]);

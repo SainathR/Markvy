@@ -49,6 +49,14 @@ function fakeApi(over: Partial<CoreApi> = {}): CoreApi {
 }
 
 describe('AppStore', () => {
+  it('opens the contents panel at start only where it does not lie over the document (wider than 1080 px)', () => {
+    for (const [narrow, open] of [[true, false], [false, true]] as const) {
+      vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(max-width: 1080px)' && narrow }));
+      expect(new AppStore(fakeApi()).tocOpen).toBe(open);
+    }
+    vi.unstubAllGlobals();
+  });
+
   it('init keeps folders and refuses saves when the library cannot be read', async () => {
     const api = fakeApi({ loadLibrary: vi.fn().mockRejectedValue({ code: 'AccessDenied' }) });
     const app = new AppStore(api);
