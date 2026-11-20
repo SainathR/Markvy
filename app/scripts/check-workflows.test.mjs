@@ -190,3 +190,39 @@ describe('tauri.conf.json (§1, §8)', () => {
     expect(conf.bundle.longDescription).toBe('Markvy opens Markdown documents and wiki folders on your computer, shows them like a book, and lets you edit them like a Word document. It changes your files only when you press Save, rename or delete, and works offline. Pictures from the internet are shown only if you allow it.');
   });
 });
+
+describe('Microsoft Store MSI (docs/microsoft-store)', () => {
+  const store = JSON.parse(readFileSync(fileURLToPath(new URL('../src-tauri/tauri.microsoftstore.conf.json', import.meta.url)), 'utf8'));
+  const conf = JSON.parse(readFileSync(fileURLToPath(new URL('../src-tauri/tauri.conf.json', import.meta.url)), 'utf8'));
+  const wf = load('microsoft-store-msi-validation.yml');
+  const steps = runs(wf.jobs.validate);
+
+  it('the Store overlay builds an MSI that carries WebView2 offline, so setup never downloads anything', () => {
+    expect(store.bundle.targets).toEqual(['msi']);
+    expect(store.bundle.windows.webviewInstallMode.type).toBe('offlineInstaller');
+  });
+
+  it('pins the MSI UpgradeCode Tauri derived for 0.1.0, so every update replaces the installed app', () => {
+    expect(conf.bundle.windows.wix.upgradeCode).toBe('A0568F55-DEF4-5F54-894F-D253A53D88FF');
+  });
+
+  it('the validation workflow runs by hand, reads the repository only and publishes nothing', () => {
+    expect(Object.keys(wf.on)).toEqual(['workflow_dispatch']);
+    expect(wf.permissions).toEqual({ contents: 'read' });
+    expect(JSON.stringify(wf)).not.toMatch(/gh release|contents: write/);
+  });
+
+  it('builds through the Store script (tauri build, never tauri bundle) and installs only on the disposable runner', () => {
+    expect(steps).toContain('Build-MarkvyMicrosoftStore.ps1');
+    expect(steps).toContain('Test-MarkvyMicrosoftStore.ps1');
+    expect(steps).toContain('-Install');
+    expect(steps).not.toContain('tauri bundle');
+    expect(wf.jobs.validate['runs-on']).toBe('windows-latest');
+  });
+
+  it('keeps secrets out of job-level env and the build step', () => {
+    expect(wf.jobs.validate.env).toBeUndefined();
+    const build = wf.jobs.validate.steps.find((s) => (s.run ?? '').includes('Build-MarkvyMicrosoftStore.ps1'));
+    expect(JSON.stringify(build)).not.toContain('secrets.');
+  });
+});

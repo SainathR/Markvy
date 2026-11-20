@@ -25,6 +25,7 @@
     "shortDescription": "Read Markdown documents and wikis like a well-designed book.",
     "longDescription": "Markvy opens Markdown documents and wiki folders on your computer, shows them like a book, and lets you edit them like a Word document. It changes your files only when you press Save, rename or delete, and works offline. Pictures from the internet are shown only if you allow it.",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
-    "resources": { "../tests/fixtures/sample-wiki/": "sample-wiki/" }
+    "resources": { "../tests/fixtures/sample-wiki/": "sample-wiki/" },
+    "windows": { "wix": { "upgradeCode": "A0568F55-DEF4-5F54-894F-D253A53D88FF" } }
   }
 }

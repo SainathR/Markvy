@@ -1,0 +1,65 @@
+# Builds the Microsoft Store MSI and tests it on a clean, disposable Windows runner: static checks, then a silent
+# per-machine install, Add or Remove Programs entry, bundleware comparison, launch, uninstall and reinstall.
+# Run by hand only (Actions > Microsoft Store MSI validation > Run workflow). It publishes nothing: the MSI and
+# the evidence are uploaded as workflow artifacts for a person to check.
+name: Microsoft Store MSI validation
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - uses: dtolnay/rust-toolchain@stable
+      # Secrets are read only by the signing step below, never by npm ci or the build (same rule as release.yml).
+      - name: Check whether a signing certificate exists
+        id: have
+        shell: bash
+        env:
+          HAS_WINDOWS: ${{ secrets.WINDOWS_CERTIFICATE != '' }}
+        run: echo "windows=$HAS_WINDOWS" >> "$GITHUB_OUTPUT"
+      - name: Windows signing certificate
+        if: steps.have.outputs.windows == 'true'
+        shell: pwsh
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        run: |
+          $pfx = Join-Path $env:RUNNER_TEMP 'markvy.pfx'
+          [IO.File]::WriteAllBytes($pfx, [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE))
+          $password = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+          $cert = Import-PfxCertificate -FilePath $pfx -CertStoreLocation Cert:\CurrentUser\My -Password $password
+          Remove-Item $pfx
+          $config = Join-Path $env:RUNNER_TEMP 'tauri.signing.json'
+          @{ bundle = @{ windows = @{ certificateThumbprint = $cert.Thumbprint; digestAlgorithm = 'sha256'; timestampUrl = 'http://timestamp.digicert.com' } } } |
+            ConvertTo-Json -Depth 5 | Set-Content -Path $config -Encoding utf8
+          "SIGNING_CONFIG=$config" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+      - name: Build the Store MSI (tauri build with the Store overlay; runs the project checks first)
+        shell: pwsh
+        run: |
+          $sign = @(); if ($env:SIGNING_CONFIG) { $sign = @('-SigningConfig', $env:SIGNING_CONFIG) }
+          ./scripts/windows/Build-MarkvyMicrosoftStore.ps1 -OutputDirectory "$env:RUNNER_TEMP\store" @sign
+      - name: Test the MSI (static, silent install, registration, bundleware, launch, uninstall)
+        shell: pwsh
+        run: |
+          $version = (Get-Content app/src-tauri/tauri.conf.json -Raw | ConvertFrom-Json).version
+          $msi = Get-ChildItem "$env:RUNNER_TEMP\store" -Filter *.msi | Select-Object -First 1
+          ./scripts/windows/Test-MarkvyMicrosoftStore.ps1 -MsiPath $msi.FullName -ExpectedVersion $version -Install -EvidenceDirectory "$env:RUNNER_TEMP\evidence"
+      - name: Upload the MSI and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: markvy-store-msi-validation
+          path: |
+            ${{ runner.temp }}/store
+            ${{ runner.temp }}/evidence
+          if-no-files-found: warn
