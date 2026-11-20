@@ -51,12 +51,13 @@ describe('ci.yml (§7: every change, three platforms)', () => {
     expect(ci.permissions).toEqual({ contents: 'read' });
   });
 
-  it('R2: installs tauri-driver and msedgedriver-tool from git, never the crates.io name', () => {
+  it("R2: installs tauri-driver, and on Windows the msedgedriver of the WebView2 Runtime's version (not Edge's)", () => {
     const all = runs(job);
     expect(all).toContain('cargo install tauri-driver --locked');
-    expect(all).toContain('cargo install --git https://github.com/chippers/msedgedriver-tool --locked');
-    expect(all).not.toContain('cargo install msedgedriver-tool');
-    expect(all).toMatch(/cd e2e\/\.driver && msedgedriver-tool/);
+    expect(all).not.toContain('msedgedriver-tool');
+    expect(all).toContain('{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'); // the WebView2 Runtime's EdgeUpdate client id
+    expect(all).toContain('https://msedgedriver.microsoft.com/$webview/edgedriver_win64.zip');
+    expect(all).toContain('e2e/.driver'); // where wdio.conf.ts looks for it
   });
 
   it('R6: ci.yml never names the crash spec; it runs inside test:e2e on Windows and skips itself elsewhere', () => {

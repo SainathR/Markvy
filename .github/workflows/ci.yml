@@ -61,12 +61,21 @@ jobs:
         run: npm run tauri build -- --no-bundle
       - name: Whole-app test tools (e2e)
         if: runner.os != 'macOS'
+        run: cargo install tauri-driver --locked
+      # msedgedriver must match the WebView2 Runtime the app runs in. On a runner that can differ from Edge's own
+      # version, which is what msedgedriver-tool reads; a mismatch fails every session with "DevToolsActivePort".
+      - name: Edge WebDriver for the WebView2 Runtime (e2e)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          cargo install tauri-driver --locked
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            cargo install --git https://github.com/chippers/msedgedriver-tool --locked
-            mkdir -p e2e/.driver && (cd e2e/.driver && msedgedriver-tool)
-          fi
+          $key = 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}'
+          $webview = (Get-ItemProperty $key).pv
+          $edge = (Get-Item "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe" -ErrorAction SilentlyContinue).VersionInfo.ProductVersion
+          "WebView2 Runtime $webview; Edge $edge"
+          New-Item -ItemType Directory -Force e2e/.driver | Out-Null
+          Invoke-WebRequest "https://msedgedriver.microsoft.com/$webview/edgedriver_win64.zip" -OutFile e2e/.driver/edgedriver.zip
+          Expand-Archive e2e/.driver/edgedriver.zip e2e/.driver -Force
+          & e2e/.driver/msedgedriver.exe --version
       - name: Whole-app tests, start-up and tree speed (e2e)
         if: runner.os != 'macOS'
         run: |
