@@ -84,6 +84,27 @@ jobs:
           else
             npm run test:e2e
           fi
+      # Only after a failed whole-app run on Windows: what the app and WebView2 did, for the log.
+      - name: Windows whole-app diagnostics (after a failure)
+        if: failure() && runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          Get-ChildItem $env:TEMP -Directory -Filter 'markvy-e2e-*' | ForEach-Object {
+            Get-ChildItem $_.FullName -Recurse -Filter markvy.log | ForEach-Object { "== $($_.FullName)"; Get-Content $_.FullName -Tail 40 } }
+          "== Application errors in the last hour"
+          Get-WinEvent -FilterHashtable @{ LogName = 'Application'; Level = 2; StartTime = (Get-Date).AddHours(-1) } -MaxEvents 10 -ErrorAction SilentlyContinue |
+            Format-List TimeCreated, ProviderName, Message | Out-String -Width 300
+          "== The app started directly, with a DevTools port"
+          $env:MARKVY_DATA_DIR = Join-Path $env:TEMP 'markvy-diag'
+          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
+          $p = Start-Process src-tauri/target/release/markvy.exe -PassThru -RedirectStandardOutput diag-out.txt -RedirectStandardError diag-err.txt
+          Start-Sleep -Seconds 20
+          "app still running: $(-not $p.HasExited); exit code: $($p.ExitCode)"
+          Get-Process msedgewebview2 -ErrorAction SilentlyContinue | Format-Table Id, StartTime | Out-String
+          try { (Invoke-WebRequest http://127.0.0.1:9222/json/version -UseBasicParsing).Content } catch { "no DevTools on 9222: $_" }
+          Get-Content diag-out.txt, diag-err.txt -ErrorAction SilentlyContinue
+          Get-ChildItem $env:MARKVY_DATA_DIR, "$env:LOCALAPPDATA\com.sainath.markvy" -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 40 -ExpandProperty FullName
+          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
       - name: Start-up speed without WebDriver (median of 3 under 1.5 s)
         if: runner.os != 'macOS'
         run: |
