@@ -64,6 +64,7 @@ describe('ci.yml (§7: every change, three platforms)', () => {
     const all = runs(job);
     // An elevated WebView2 (Runtime 150+) ignores the variables msedgedriver uses to open its DevTools port.
     expect(all).toContain('gsudo --integrity Medium npm run test:e2e');
+    expect(all).toMatch(/choco install gsudo --version=\d+\.\d+\.\d+/); // pinned: it runs as administrator
     // Without a session bus GLib waits 25 s for xdg-desktop-portal before the first frame.
     expect(all).toContain('dbus-run-session -- xvfb-run -a npm run test:e2e');
     expect(all).toContain('dbus-run-session -- xvfb-run -a npm run bench:startup');
@@ -264,7 +265,8 @@ describe('keyboard-only editing screen test (app/webtest/screens.pw.ts)', () => 
   });
 
   it('the toolbar link (app/src/EditorPane.svelte) uses the addWebLink tested in model.test.ts', () => {
-    expect(pane).toMatch(/import \{ addWebLink as linkTo,[^}]*\} from '.\/lib\/editor\/codec'/);
-    expect(pane).toContain('linkTo(codec, href)');
+    const local = /import \{[^}]*\baddWebLink(?:\s+as\s+(\w+))?[^}]*\}\s*from\s*'\.\/lib\/editor\/codec'/.exec(pane);
+    expect(local, 'EditorPane imports addWebLink from codec').not.toBeNull();
+    expect(pane).toContain(`${local[1] ?? 'addWebLink'}(codec, `);
   });
 });

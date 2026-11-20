@@ -28,7 +28,7 @@ These ran on the code as it stands after this work; there were no failures befor
 |---|---|---|---|---|---|
 | MSI-001 | MSI metadata | **PASS** | ProductName Markvy; Manufacturer Sainath Racherla; ProductVersion 0.1.0; ProductCode {FB541314-4697-4428-A3AD-B77DB83E295C}; UpgradeCode {A0568F55-DEF4-5F54-894F-D253A53D88FF} (unchanged); ALLUSERS 1 | as left | `evidence/msi-metadata.json` |
 | MSI-002 | Architecture | **PASS** | Template `x64;0` | x64 | same |
-| MSI-003 | MSI signature | **BLOCKED** | `NotSigned` (Get-AuthenticodeSignature); signtool: "No signature found" | Valid, trusted CA | same |
+| MSI-003 | MSI signature | **BLOCKED** | `NotSigned` (Get-AuthenticodeSignature); `signtool verify /pa /v` (Windows SDK 10.0.28000, 2026-11-20): "No signature found", exit 1. `markvy.exe` inside the MSI (`msiexec /a`): `NotSigned` | Valid, trusted CA, for the MSI and `markvy.exe` | same |
 | MSI-004 | Silent installation | NOT RUN | needs an elevated clean machine | exit 0, no UI | — |
 | MSI-005 | Installer exit code | NOT RUN | | 0 or 3010 | — |
 | MSI-006 | Installed apps registration | NOT RUN | | one HKLM entry "Markvy" 0.1.0 | — |

@@ -217,6 +217,8 @@ You don't run these by hand. They run in CI.
 
 - `ci.yml`: builds and tests on Windows, macOS and Linux for every change. It includes the read-only check, the dependency review and the speed checks.
 - Whole-app tests on Windows and Linux use `tauri-driver` (`cargo install tauri-driver --locked`). On Windows they also need `msedgedriver.exe` in `app/e2e/.driver` of the **same version as the WebView2 Runtime** (Installed apps → Microsoft Edge WebView2 Runtime), not of Edge: download it from `https://msedgedriver.microsoft.com/<version>/edgedriver_win64.zip`. `ci.yml` does this.
+- Run the Windows whole-app tests from a normal (not administrator) terminal: since WebView2 Runtime 150 an elevated app ignores the settings msedgedriver uses to attach, and every session fails with "DevToolsActivePort file doesn't exist". CI runs them at Medium integrity with gsudo.
+- On Linux without a desktop session (CI, SSH), run them in `dbus-run-session -- xvfb-run -a …`; without a session bus the app waits 25 s for xdg-desktop-portal before its first frame.
 - The editing scenarios and editing speed checks (9a, 9b) run on Windows only; on Linux and macOS they skip themselves, like the crash test.
 - The Windows crash test is automated. Linux and macOS crash checks are by hand (section 5 and `macos-checklist.md`).
 - axe-core found no colour-contrast problems in any theme.

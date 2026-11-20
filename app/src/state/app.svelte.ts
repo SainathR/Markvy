@@ -24,7 +24,8 @@ export { assetUrl };
 const systemDark = () => typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches;
 const systemReducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 // Up to this width the contents panel lies over the document (app.css, "Narrow screens"), hiding its right side and Edit.
-const tocOverlays = () => typeof matchMedia === 'function' && matchMedia('(max-width: 1080px)').matches;
+const TOC_OVERLAYS = '(max-width: 1080px)';
+const tocOverlays = () => typeof matchMedia === 'function' && matchMedia(TOC_OVERLAYS).matches;
 
 export class AppStore {
   collections = $state<Collection[]>([]);
@@ -93,6 +94,8 @@ export class AppStore {
   drafts = $state<Record<string, Draft>>({});
 
   constructor(readonly api: CoreApi = realCore) {
+    // Crossing the width where the panel starts to cover the document closes it (and widening opens it again).
+    if (typeof matchMedia === 'function') matchMedia(TOC_OVERLAYS).addEventListener?.('change', (e) => (this.tocOpen = !e.matches));
     this.saver = createSaver(
       () => this.api.saveLibrary(toRaw($state.snapshot(this.snapshotLibrary()) as LibraryData)),
       1000,

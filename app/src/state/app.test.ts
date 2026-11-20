@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Collection, Tree } from '../lib/core';
 import type { SaveResult, SearchResult } from '../lib/core';
 import { MESSAGES } from '../lib/core';
@@ -49,12 +49,19 @@ function fakeApi(over: Partial<CoreApi> = {}): CoreApi {
 }
 
 describe('AppStore', () => {
-  it('opens the contents panel at start only where it does not lie over the document (wider than 1080 px)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('opens the contents panel only where it does not lie over the document (wider than 1080 px)', () => {
+    let onChange: ((e: { matches: boolean }) => void) | undefined;
     for (const [narrow, open] of [[true, false], [false, true]] as const) {
-      vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(max-width: 1080px)' && narrow }));
+      vi.stubGlobal('matchMedia', (q: string) => ({ matches: q === '(max-width: 1080px)' && narrow, addEventListener: (_: string, f: typeof onChange) => (onChange = f) }));
       expect(new AppStore(fakeApi()).tocOpen).toBe(open);
     }
-    vi.unstubAllGlobals();
+    const app = new AppStore(fakeApi()); // starts wide, open
+    onChange!({ matches: true }); // the window is narrowed past 1080 px
+    expect(app.tocOpen).toBe(false);
+    onChange!({ matches: false });
+    expect(app.tocOpen).toBe(true);
   });
 
   it('init keeps folders and refuses saves when the library cannot be read', async () => {

@@ -62,8 +62,7 @@ jobs:
       - name: Whole-app test tools (e2e)
         if: runner.os != 'macOS'
         run: cargo install tauri-driver --locked
-      # msedgedriver must match the WebView2 Runtime the app runs in. On a runner that can differ from Edge's own
-      # version, which is what msedgedriver-tool reads; a mismatch fails every session with "DevToolsActivePort".
+      # msedgedriver must match the WebView2 Runtime the app runs in, which can differ from Edge's own version.
       - name: Edge WebDriver for the WebView2 Runtime (e2e)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -83,9 +82,9 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          choco install gsudo --no-progress -y
+          choco install gsudo --version=2.6.1 --no-progress -y
           'C:\tools\gsudo\Current' | Out-File -Append -Encoding utf8 $env:GITHUB_PATH # later steps don't see choco's PATH change
-          icacls "$env:GITHUB_WORKSPACE" /grant "Everyone:(OI)(CI)F" /Q
+          icacls "$env:GITHUB_WORKSPACE" /grant "${env:USERNAME}:(OI)(CI)F" /Q
       - name: Whole-app tests, start-up and tree speed (e2e)
         if: runner.os != 'macOS'
         run: |
