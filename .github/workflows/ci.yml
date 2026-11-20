@@ -105,6 +105,24 @@ jobs:
           Get-Content diag-out.txt, diag-err.txt -ErrorAction SilentlyContinue
           Get-ChildItem $env:MARKVY_DATA_DIR, "$env:LOCALAPPDATA\com.sainath.markvy" -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -First 40 -ExpandProperty FullName
           if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
+      # TEMPORARY: Linux start-up takes about 30 s on the runner (first paint at 30.8 s). Times one start per environment.
+      - name: Linux start-up probe (temporary)
+        if: runner.os == 'Linux' && always()
+        continue-on-error: true
+        run: |
+          bin=src-tauri/target/release/markvy
+          probe() {
+            local start=$(date +%s%N)
+            env MARKVY_E2E_STARTUP_EXIT=1 MARKVY_DATA_DIR="$(mktemp -d)" "$@" 2>&1 | grep -E 'BENCH|rror|WARN' | head -4
+            echo "PROBE [$*] took $(( ($(date +%s%N) - start) / 1000000 )) ms"
+          }
+          probe xvfb-run -a timeout 60 "$bin"
+          probe NO_AT_BRIDGE=1 xvfb-run -a timeout 60 "$bin"
+          probe GTK_A11Y=none NO_AT_BRIDGE=1 xvfb-run -a timeout 60 "$bin"
+          probe xvfb-run -a dbus-run-session -- timeout 60 "$bin"
+          probe WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 xvfb-run -a timeout 60 "$bin"
+          probe WEBKIT_DISABLE_DMABUF_RENDERER=1 xvfb-run -a timeout 60 "$bin"
+          echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-unset}"
       - name: Start-up speed without WebDriver (median of 3 under 1.5 s)
         if: runner.os != 'macOS'
         run: |
