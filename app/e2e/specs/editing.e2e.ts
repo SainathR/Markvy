@@ -11,6 +11,9 @@ const LINKS = `Links${Date.now()}.md`; // unique per run, so an older Recycle Bi
 const read = (root: string, name: string) => readFileSync(path.join(root, name), 'utf8');
 
 describe('Editing (Windows)', () => {
+  // Windows scenarios (release checklist 9a). WebKitWebDriver drops keys in the editor (Enter, a repeated letter);
+  // macOS and Linux run the vitest round trips instead.
+  before(function () { if (process.platform !== 'win32') this.skip(); });
   let root: string;
   before(async () => {
     root = makeFolder({ 'Page.md': '# Page\n\nFirst line.\n\n- one\n- two\n', [LINKS]: 'See [[Page]].\n' });
