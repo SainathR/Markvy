@@ -2,7 +2,7 @@
   import { onDestroy, onMount, tick } from 'svelte';
   import { editorViewCtx } from '@milkdown/kit/core';
   import { redoCommand, undoCommand } from '@milkdown/kit/plugin/history';
-  import { createCodeBlockCommand, toggleEmphasisCommand, toggleInlineCodeCommand, toggleLinkCommand, toggleStrongCommand, wrapInBlockquoteCommand, wrapInBulletListCommand, wrapInHeadingCommand, wrapInOrderedListCommand } from '@milkdown/kit/preset/commonmark';
+  import { createCodeBlockCommand, toggleEmphasisCommand, toggleInlineCodeCommand, toggleStrongCommand, wrapInBlockquoteCommand, wrapInBulletListCommand, wrapInHeadingCommand, wrapInOrderedListCommand } from '@milkdown/kit/preset/commonmark';
   import { addColAfterCommand, addRowAfterCommand, deleteSelectedCellsCommand, insertTableCommand, toggleStrikethroughCommand } from '@milkdown/kit/preset/gfm';
   import type { Node as PMNode } from '@milkdown/kit/prose/model';
   import { EditorState, Selection, TextSelection } from '@milkdown/kit/prose/state';
@@ -13,7 +13,7 @@
   import Icon from './Icon.svelte';
   import { MESSAGES } from './lib/core';
   import { splitBlocks } from './lib/editor/blocks';
-  import { createCodec, type Codec } from './lib/editor/codec';
+  import { addWebLink as linkTo, createCodec, type Codec } from './lib/editor/codec';
   import { load, toMarkdown, type Loaded } from './lib/editor/model';
   import { detectStyle } from './lib/editor/style';
   import { parseKey } from './lib/library';
@@ -196,11 +196,8 @@
   function addWebLink() {
     const href = linkValue.trim();
     linkAsk = null;
-    if (!view || !href) return;
-    const { from, empty } = view.state.selection;
-    // With nothing selected, the address itself becomes the link text.
-    if (empty) view.dispatch(view.state.tr.insertText(href).addMark(from, from + href.length, view.state.schema.marks.link.create({ href })));
-    else run(toggleLinkCommand.key, { href });
+    if (!codec || !href) return;
+    linkTo(codec, href);
     void tick().then(() => view?.focus()); // after the dialog has gone: it hands focus back to the toolbar button
   }
 

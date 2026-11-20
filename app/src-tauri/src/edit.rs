@@ -328,6 +328,17 @@ fn picture_ext(b: &[u8]) -> Option<&'static str> {
     else { None }
 }
 
+/// Whether creating `path` failed because something already holds that name. Only a name something really holds
+/// moves on: a false "exists" stops instead of looping. Windows reports a folder (or link) at the name as "access
+/// denied", so a denial counts only when one is there; any other denial is a real error and is reported.
+fn name_taken(e: &io::Error, path: &Path) -> bool {
+    match e.kind() {
+        io::ErrorKind::AlreadyExists => fs::symlink_metadata(path).is_ok(),
+        io::ErrorKind::PermissionDenied => fs::symlink_metadata(path).is_ok_and(|m| !m.is_file()),
+        _ => false,
+    }
+}
+
 /// Saves a pasted picture as images/<page>-<n>.<ext> next to the page. Returns the link from the page.
 pub fn save_picture(root: &Path, page: &str, bytes: &[u8]) -> Result<String, AppError> {
     let ext = picture_ext(bytes).filter(|_| bytes.len() <= MAX_PICTURE).ok_or(AppError::ImageRejected)?;
@@ -347,8 +358,7 @@ pub fn save_picture(root: &Path, page: &str, bytes: &[u8]) -> Result<String, App
                 f.write_all(bytes).and_then(|_| f.sync_all()).map_err(write_err)?;
                 return Ok(format!("images/{name}"));
             }
-            // Only a name something really holds moves on; a false "exists" stops instead of looping.
-            Err(e) if e.kind() == io::ErrorKind::AlreadyExists && fs::symlink_metadata(dir.join(&name)).is_ok() => continue,
+            Err(e) if name_taken(&e, &dir.join(&name)) => continue,
             Err(e) => return Err(write_err(e)),
         }
     }
@@ -534,6 +544,44 @@ mod tests {
         fs::create_dir_all(d.path().join("images/A-1.png")).unwrap();
         let png = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0];
         assert_eq!(save_picture(d.path(), "A.md", &png).unwrap(), "images/A-2.png");
+    }
+
+    #[test]
+    fn pictures_never_overwrite_a_file_that_holds_the_next_name() {
+        let d = tempfile::tempdir().unwrap();
+        fs::write(d.path().join("A.md"), "x").unwrap();
+        fs::create_dir(d.path().join("images")).unwrap();
+        fs::write(d.path().join("images/A-1.png"), "keep").unwrap();
+        let png = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0];
+        assert_eq!(save_picture(d.path(), "A.md", &png).unwrap(), "images/A-2.png");
+        assert_eq!(fs::read_to_string(d.path().join("images/A-1.png")).unwrap(), "keep");
+    }
+
+    #[test]
+    fn pictures_report_an_images_folder_that_cannot_be_made() {
+        let d = tempfile::tempdir().unwrap();
+        fs::write(d.path().join("A.md"), "x").unwrap();
+        fs::write(d.path().join("images"), "a file, not a folder").unwrap();
+        let png = [0x89, b'P', b'N', b'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0];
+        assert!(save_picture(d.path(), "A.md", &png).is_err());
+        assert_eq!(fs::read_to_string(d.path().join("images")).unwrap(), "a file, not a folder");
+    }
+
+    #[test]
+    fn only_a_name_something_holds_counts_as_taken() {
+        let d = tempfile::tempdir().unwrap();
+        let (file, folder, missing) = (d.path().join("f.png"), d.path().join("d.png"), d.path().join("none.png"));
+        fs::write(&file, "x").unwrap();
+        fs::create_dir(&folder).unwrap();
+        let exists = io::Error::from(io::ErrorKind::AlreadyExists);
+        let denied = io::Error::from(io::ErrorKind::PermissionDenied); // what Windows says for a folder at the name
+        assert!(name_taken(&exists, &file));
+        assert!(name_taken(&exists, &folder));
+        assert!(!name_taken(&exists, &missing)); // a false "exists" stops instead of looping
+        assert!(name_taken(&denied, &folder));
+        assert!(!name_taken(&denied, &missing)); // a real denial (no write access) is reported
+        assert!(!name_taken(&denied, &file)); // a file at the name says "exists"; a denial there is a real one
+        assert!(!name_taken(&io::Error::from(io::ErrorKind::Other), &file));
     }
 
     #[test]

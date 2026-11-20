@@ -139,8 +139,11 @@ async function openDocs(page: Page) {
   await expect(page.locator('article h1')).toBeVisible();
 }
 
+const mac = process.platform === 'darwin';
 /** Presses a key (Tab by default) until the focused element has this accessible label or is inside this selector; keyboard only. */
 async function focusByKeys(page: Page, match: { label?: string; inside?: string }, key = 'Tab') {
+  // WebKit on macOS behaves like Safari: Tab reaches buttons only with Option held (or "Press Tab to highlight each item" on).
+  if (mac && page.context().browser()?.browserType().name() === 'webkit') key = `Alt+${key}`;
   for (let i = 0; i < 80; i++) {
     const hit = await page.evaluate(({ label, inside }) => {
       const el = document.activeElement;
@@ -152,6 +155,20 @@ async function focusByKeys(page: Page, match: { label?: string; inside?: string 
   throw new Error(`keyboard never reached ${JSON.stringify(match)}`);
 }
 const inTable = (page: Page) => page.evaluate(() => !!document.getSelection()?.anchorNode?.parentElement?.closest('td, th'));
+/** The editor learns where the caret is from "selectionchange" events, which arrive after the keys that moved it; a key sent
+ *  before then acts on the old place. This records what the last event saw, so the test waits until the editor knows. */
+const trackSelection = (page: Page) => page.evaluate(() => {
+  document.addEventListener('selectionchange', () => {
+    const s = document.getSelection();
+    const at = s?.anchorNode?.parentElement;
+    (window as any).__seenSel = {
+      text: s?.toString() ?? '',
+      titleEnd: !!s?.anchorNode && s.anchorOffset === s.anchorNode.textContent?.length && !!at?.closest('h1'),
+      cell: !!at?.closest('td, th'),
+    };
+  });
+});
+const seenSel = (page: Page) => page.evaluate(() => ((window as any).__seenSel ?? {}) as { text?: string; titleEnd?: boolean; cell?: boolean });
 const fakeDoc = (page: Page, path: string) => page.evaluate((p) => (window as any).__fakeDoc(p) as string, path);
 
 test.describe('editing', () => {
@@ -161,12 +178,17 @@ test.describe('editing', () => {
     await focusByKeys(page, { label: 'Edit this page' });
     await page.keyboard.press('Enter');
     await expect(page.getByRole('toolbar', { name: 'Formatting' })).toBeVisible();
+    await trackSelection(page);
     await focusByKeys(page, { inside: '.ed-host [contenteditable="true"]' });
-    // The editor puts its own caret in the first text a moment after opening; go to the end of the title line once that is done.
+    // On focus the editor puts back its own caret (the first text), so look before moving: done only once the editor has
+    // seen the caret at the end of the title line.
     await expect.poll(async () => {
-      await page.keyboard.press('Control+Home');
-      await page.keyboard.press('End');
-      return page.evaluate(() => { const s = document.getSelection(); return !!s?.anchorNode && s.anchorOffset === s.anchorNode.textContent?.length && s.anchorNode.parentElement?.closest('h1') !== null; });
+      const done = (await seenSel(page)).titleEnd;
+      if (!done) {
+        await page.keyboard.press(mac ? 'Meta+ArrowUp' : 'Control+Home'); // macOS text has no Ctrl+Home or End
+        await page.keyboard.press(mac ? 'Meta+ArrowRight' : 'End');
+      }
+      return done;
     }).toBe(true);
     await page.keyboard.press('Enter');
     await page.keyboard.type('## Added heading');
@@ -176,13 +198,14 @@ test.describe('editing', () => {
     await page.keyboard.press('Enter');
     await page.keyboard.type('See site');
     for (let i = 0; i < 4; i++) await page.keyboard.press('Shift+ArrowLeft'); // select "site": it becomes the link text
+    await expect.poll(async () => (await seenSel(page)).text).toBe('site');
     await focusByKeys(page, { label: 'Link to a web address' }, 'Shift+Tab');
     await page.keyboard.press('Enter');
     await page.keyboard.type('https://example.org');
     await page.keyboard.press('Enter');
     await expect(page.getByRole('dialog')).toHaveCount(0);
     for (let i = 0; i < 40 && !(await inTable(page)); i++) await page.keyboard.press('ArrowDown');
-    expect(await inTable(page)).toBe(true);
+    await expect.poll(async () => (await seenSel(page)).cell).toBe(true);
     await focusByKeys(page, { label: 'Add table row' }, 'Shift+Tab');
     await page.keyboard.press('Enter');
     await page.keyboard.press('Control+s');

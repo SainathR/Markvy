@@ -4,7 +4,7 @@ import { editorViewCtx, remarkCtx } from '@milkdown/kit/core';
 import { EditorState, TextSelection } from '@milkdown/kit/prose/state';
 import { afterAll, describe, expect, it, vi } from 'vitest';
 import { splitBlocks } from './blocks';
-import { createCodec, type Codec } from './codec';
+import { addWebLink, createCodec, type Codec } from './codec';
 import { load, toMarkdown } from './model';
 import { detectStyle } from './style';
 
@@ -132,6 +132,28 @@ describe('block-patched saves', () => {
     const para = c.parse('Go to [[Other Page]] today.')[0];
     const out = toMarkdown(c.doc([para, loaded.doc.child(1)]), loaded, c);
     expect(out).toBe('Go to [[Other Page]] today.\n\n```mermaid\nflowchart LR\n  A-->B\n```\n');
+  });
+});
+
+describe('links added from the toolbar', () => {
+  /** Opens `start`, selects document positions `from`..`to`, adds a link to `href` as the toolbar does, and saves. */
+  async function linked(start: string, from: number, to: number, href: string) {
+    const c = await codecFor(start);
+    const loaded = load(start, c);
+    const view = c.editor.ctx.get(editorViewCtx);
+    view.updateState(EditorState.create({ doc: loaded.doc, plugins: view.state.plugins }));
+    view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, from, to)));
+    addWebLink(c, href);
+    return toMarkdown(view.state.doc, loaded, c);
+  }
+
+  it('selected text becomes the link text, and nothing else changes', async () => {
+    // The paragraph "See site" starts at 7, after the heading, so "site" is 12..16.
+    expect(await linked('# Notes\n\nSee site\n\nLast.\n', 12, 16, 'https://example.org')).toBe('# Notes\n\nSee [site](https://example.org)\n\nLast.\n');
+  });
+
+  it('with nothing selected the address becomes the link text, saved as an autolink', async () => {
+    expect(await linked('See site\n', 9, 9, 'https://example.org')).toBe('See site<https://example.org>\n');
   });
 });
 

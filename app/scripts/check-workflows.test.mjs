@@ -226,3 +226,35 @@ describe('Microsoft Store MSI (docs/microsoft-store)', () => {
     expect(JSON.stringify(build)).not.toContain('secrets.');
   });
 });
+
+describe('GitHub Actions runtime', () => {
+  // GitHub retired the Node.js 20 runner for actions; these are the first majors that run on Node.js 24.
+  const NODE24 = { 'actions/checkout': 5, 'actions/setup-node': 5, 'actions/upload-artifact': 6, 'actions/download-artifact': 7 };
+  for (const file of ['.github/workflows/ci.yml', '.github/workflows/release.yml', '.github/workflows/microsoft-store-msi-validation.yml']) {
+    it(`${file} uses only actions that run on Node.js 24`, () => {
+      const text = readFileSync(fileURLToPath(new URL(`../../${file}`, import.meta.url)), 'utf8');
+      for (const [, name, major] of text.matchAll(/uses:\s*(actions\/[\w-]+)@v(\d+)/g)) {
+        expect(NODE24[name], `${name} is not in the list`).toBeDefined();
+        expect(Number(major), name).toBeGreaterThanOrEqual(NODE24[name]);
+      }
+    });
+  }
+});
+
+describe('keyboard-only editing screen test (app/webtest/screens.pw.ts)', () => {
+  const spec = readFileSync(fileURLToPath(new URL('../webtest/screens.pw.ts', import.meta.url)), 'utf8');
+  const pane = readFileSync(fileURLToPath(new URL('../src/EditorPane.svelte', import.meta.url)), 'utf8');
+
+  it('waits for what the editor has seen, never for a fixed time', () => {
+    const start = spec.indexOf("test('a complete edit with the keyboard only");
+    const body = spec.slice(spec.lastIndexOf('const inTable', start), spec.indexOf("\n  test(", start + 1));
+    expect(start).toBeGreaterThan(0);
+    expect(body).not.toMatch(/waitForTimeout|setTimeout/);
+    expect(body).toContain('selectionchange');
+  });
+
+  it('the toolbar link (app/src/EditorPane.svelte) uses the addWebLink tested in model.test.ts', () => {
+    expect(pane).toMatch(/import \{ addWebLink as linkTo,[^}]*\} from '.\/lib\/editor\/codec'/);
+    expect(pane).toContain('linkTo(codec, href)');
+  });
+});

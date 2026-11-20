@@ -1,12 +1,12 @@
-import { defaultValueCtx, Editor, editorViewOptionsCtx, parserCtx, remarkCtx, remarkStringifyOptionsCtx, rootCtx, schemaCtx, serializerCtx } from '@milkdown/kit/core';
+import { defaultValueCtx, Editor, editorViewCtx, editorViewOptionsCtx, parserCtx, remarkCtx, remarkStringifyOptionsCtx, rootCtx, schemaCtx, serializerCtx } from '@milkdown/kit/core';
 import { clipboard } from '@milkdown/kit/plugin/clipboard';
 import { history } from '@milkdown/kit/plugin/history';
-import { commonmark, syncHeadingIdPlugin } from '@milkdown/kit/preset/commonmark';
+import { commonmark, syncHeadingIdPlugin, toggleLinkCommand } from '@milkdown/kit/preset/commonmark';
 import { gfm } from '@milkdown/kit/preset/gfm';
 import { InputRule } from '@milkdown/kit/prose/inputrules';
 import type { Node as PMNode } from '@milkdown/kit/prose/model';
 import { ParserState } from '@milkdown/kit/transformer';
-import { $inputRule, $node, $remark } from '@milkdown/kit/utils';
+import { $inputRule, $node, $remark, callCommand } from '@milkdown/kit/utils';
 import type { BlockKind } from './blocks';
 import { stringifyOptions, type MdStyle } from './style';
 
@@ -19,6 +19,14 @@ export interface Codec {
   doc(nodes: PMNode[]): PMNode;
   editor: Editor;
   destroy(): void;
+}
+
+/** Links the selected text to `href`. With nothing selected, the address itself becomes the link text. */
+export function addWebLink(c: Codec, href: string) {
+  const view = c.editor.ctx.get(editorViewCtx);
+  const { from, empty } = view.state.selection;
+  if (empty) view.dispatch(view.state.tr.insertText(href).addMark(from, from + href.length, view.state.schema.marks.link.create({ href })));
+  else c.editor.action(callCommand(toggleLinkCommand.key, { href }));
 }
 
 type MdNode = { type: string; value?: string; children?: MdNode[]; position?: { start: { offset?: number }; end: { offset?: number } } };
