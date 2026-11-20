@@ -84,6 +84,7 @@ jobs:
         shell: pwsh
         run: |
           choco install gsudo --no-progress -y
+          'C:\tools\gsudo\Current' | Out-File -Append -Encoding utf8 $env:GITHUB_PATH # later steps don't see choco's PATH change
           icacls "$env:GITHUB_WORKSPACE" /grant "Everyone:(OI)(CI)F" /Q
       - name: Whole-app tests, start-up and tree speed (e2e)
         if: runner.os != 'macOS'
