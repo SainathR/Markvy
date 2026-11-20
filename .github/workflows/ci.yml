@@ -76,69 +76,28 @@ jobs:
           Invoke-WebRequest "https://msedgedriver.microsoft.com/$webview/edgedriver_win64.zip" -OutFile e2e/.driver/edgedriver.zip
           Expand-Archive e2e/.driver/edgedriver.zip e2e/.driver -Force
           & e2e/.driver/msedgedriver.exe --version
+      # Windows: since WebView2 Runtime 150 an elevated app ignores the WEBVIEW2_* variables msedgedriver uses to open
+      # its DevTools port, and the runner is elevated; so the tests run at Medium integrity through gsudo (the workaround
+      # in tauri-apps/wry#1782). Linux: without a session bus GLib waits 25 s for xdg-desktop-portal; give it one.
+      - name: Whole-app test runner at Medium integrity (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          choco install gsudo --no-progress -y
+          icacls "$env:GITHUB_WORKSPACE" /grant "Everyone:(OI)(CI)F" /Q
       - name: Whole-app tests, start-up and tree speed (e2e)
         if: runner.os != 'macOS'
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
-            MARKVY_NATIVE_DRIVER=$(command -v WebKitWebDriver) xvfb-run -a npm run test:e2e
+            MARKVY_NATIVE_DRIVER=$(command -v WebKitWebDriver) dbus-run-session -- xvfb-run -a npm run test:e2e
           else
-            npm run test:e2e
+            gsudo --integrity Medium npm run test:e2e
           fi
-      # Only after a failed whole-app run on Windows: what the app and WebView2 did, for the log.
-      - name: Windows whole-app diagnostics (after a failure)
-        if: failure() && runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          Get-ChildItem $env:TEMP -Directory -Filter 'markvy-e2e-*' | ForEach-Object {
-            Get-ChildItem $_.FullName -Recurse -Filter markvy.log | ForEach-Object { "== $($_.FullName)"; Get-Content $_.FullName -Tail 40 } }
-          "== Application errors in the last hour"
-          Get-WinEvent -FilterHashtable @{ LogName = 'Application'; Level = 2; StartTime = (Get-Date).AddHours(-1) } -MaxEvents 10 -ErrorAction SilentlyContinue |
-            Format-List TimeCreated, ProviderName, Message | Out-String -Width 300
-          "== The app started directly, with a DevTools port"
-          $env:MARKVY_DATA_DIR = Join-Path $env:TEMP 'markvy-diag'
-          $env:WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS = '--remote-debugging-port=9222'
-          $p = Start-Process src-tauri/target/release/markvy.exe -PassThru -RedirectStandardOutput diag-out.txt -RedirectStandardError diag-err.txt
-          Start-Sleep -Seconds 20
-          "app still running: $(-not $p.HasExited); exit code: $($p.ExitCode)"
-          "== WebView2 browser process command lines"
-          Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" | Where-Object CommandLine -notmatch '--type=' | ForEach-Object CommandLine
-          try { (Invoke-WebRequest http://127.0.0.1:9222/json/version -UseBasicParsing).Content } catch { "no DevTools on 9222: $_" }
-          Get-Content diag-out.txt, diag-err.txt -ErrorAction SilentlyContinue
-          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
-          "== Edge and WebView2 policies"
-          foreach ($k in 'HKLM:\SOFTWARE\Policies\Microsoft\Edge', 'HKLM:\SOFTWARE\Policies\Microsoft\Edge\WebView2', 'HKCU:\SOFTWARE\Policies\Microsoft\Edge', 'HKCU:\SOFTWARE\Policies\Microsoft\Edge\WebView2') {
-            if (Test-Path $k) { "-- $k"; Get-ItemProperty $k | Out-String; Get-ChildItem $k -Recurse | ForEach-Object { "-- $($_.Name)"; Get-ItemProperty $_.PSPath | Out-String } } }
-          "== Elevated: $(([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator))"
-          "== Same start with a fresh WebView2 data folder"
-          $env:WEBVIEW2_USER_DATA_FOLDER = Join-Path $env:TEMP 'markvy-diag-wv2'
-          $p = Start-Process src-tauri/target/release/markvy.exe -PassThru
-          Start-Sleep -Seconds 20
-          try { (Invoke-WebRequest http://127.0.0.1:9222/json/version -UseBasicParsing).Content } catch { "no DevTools on 9222: $_" }
-          Get-ChildItem $env:WEBVIEW2_USER_DATA_FOLDER -Filter DevToolsActivePort -Recurse -ErrorAction SilentlyContinue | ForEach-Object FullName
-          if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
-      # TEMPORARY: Linux start-up takes about 30 s on the runner (first paint at 30.8 s). Times one start per environment.
-      - name: Linux start-up probe (temporary)
-        if: runner.os == 'Linux' && always()
-        continue-on-error: true
-        run: |
-          bin=src-tauri/target/release/markvy
-          probe() {
-            local start=$(date +%s%N)
-            env MARKVY_E2E_STARTUP_EXIT=1 MARKVY_DATA_DIR="$(mktemp -d)" "$@" 2>&1 | grep -E 'BENCH|rror|WARN' | head -4
-            echo "PROBE [$*] took $(( ($(date +%s%N) - start) / 1000000 )) ms"
-          }
-          probe xvfb-run -a timeout 60 "$bin"
-          probe NO_AT_BRIDGE=1 xvfb-run -a timeout 60 "$bin"
-          probe GTK_A11Y=none NO_AT_BRIDGE=1 xvfb-run -a timeout 60 "$bin"
-          probe xvfb-run -a dbus-run-session -- timeout 60 "$bin"
-          probe WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 xvfb-run -a timeout 60 "$bin"
-          probe WEBKIT_DISABLE_DMABUF_RENDERER=1 xvfb-run -a timeout 60 "$bin"
-          echo "DBUS_SESSION_BUS_ADDRESS=${DBUS_SESSION_BUS_ADDRESS:-unset}"
       - name: Start-up speed without WebDriver (median of 3 under 1.5 s)
         if: runner.os != 'macOS'
         run: |
           if [ "$RUNNER_OS" = "Linux" ]; then
-            xvfb-run -a npm run bench:startup
+            dbus-run-session -- xvfb-run -a npm run bench:startup
           else
             npm run bench:startup
           fi

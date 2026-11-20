@@ -60,6 +60,15 @@ describe('ci.yml (§7: every change, three platforms)', () => {
     expect(all).toContain('e2e/.driver'); // where wdio.conf.ts looks for it
   });
 
+  it('R2b: Windows whole-app tests run at Medium integrity; Linux ones get their own D-Bus session', () => {
+    const all = runs(job);
+    // An elevated WebView2 (Runtime 150+) ignores the variables msedgedriver uses to open its DevTools port.
+    expect(all).toContain('gsudo --integrity Medium npm run test:e2e');
+    // Without a session bus GLib waits 25 s for xdg-desktop-portal before the first frame.
+    expect(all).toContain('dbus-run-session -- xvfb-run -a npm run test:e2e');
+    expect(all).toContain('dbus-run-session -- xvfb-run -a npm run bench:startup');
+  });
+
   it('R6: ci.yml never names the crash spec; it runs inside test:e2e on Windows and skips itself elsewhere', () => {
     expect(JSON.stringify(ci)).not.toMatch(/crash/i);
   });
