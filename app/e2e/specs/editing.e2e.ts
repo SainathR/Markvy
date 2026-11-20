@@ -91,8 +91,10 @@ describe('Editing (Windows)', () => {
     await browser.keys(' crash draft');
     await browser.pause(1500); // drafts are kept shortly after typing
     try { await browser.execute(() => { void (window as any).__TAURI_INTERNALS__.invoke('e2e_crash_webview'); }); } catch { /* the page may die first */ }
-    const page = async (js: string) => evalInPage(js).catch(() => undefined);
-    await browser.waitUntil(async () => !!(await page('[...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Restore")')), { timeout: 20_000, interval: 500, timeoutMsg: 'the Restore banner never appeared' });
+    let lastError = 'none';
+    const page = async (js: string) => evalInPage(js).catch((e) => { lastError = String(e); return undefined; });
+    await browser.waitUntil(async () => !!(await page('[...document.querySelectorAll("button")].some(b => b.textContent.trim() === "Restore")')), { timeout: 20_000, interval: 500 })
+      .catch(() => { throw new Error(`the Restore banner never appeared; last DevTools error: ${lastError}`); });
     await page('[...document.querySelectorAll("button")].find(b => b.textContent.trim() === "Restore").click(); 1');
     await browser.waitUntil(async () => String(await page('document.querySelector("[aria-label=\\"Document text\\"]")?.textContent')).includes('crash draft'), { timeout: 10_000, timeoutMsg: 'the draft was not restored' });
   });

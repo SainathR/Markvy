@@ -59,7 +59,7 @@ export async function evalInPage(expression: string): Promise<unknown> {
     const page = targets?.find((t) => t.type === 'page' && t.url.startsWith('http://tauri.localhost/'));
     if (page) return runOverDevTools(page.webSocketDebuggerUrl, expression);
   }
-  throw new Error('Markvy’s DevTools page was not found.');
+  throw new Error(`Markvy’s DevTools page was not found (${files.length} DevToolsActivePort file(s) written since the session began under ${os.tmpdir()}${path.sep}scoped_dir*).`);
 }
 
 function runOverDevTools(url: string, expression: string): Promise<unknown> {

@@ -7,9 +7,11 @@ const crashViaDriver = async () => {
     await browser.execute(() => { void (window as any).__TAURI_INTERNALS__.invoke('e2e_crash_webview'); });
   } catch { /* the page may die before the driver gets its answer */ }
 };
-const pageText = async () => String(await evalInPage('document.body.innerText').catch(() => ''));
+let lastError = 'none';
+const pageText = async () => String(await evalInPage('document.body.innerText').catch((e) => { lastError = String(e); return ''; }));
 const pageShows = (needle: string) =>
-  browser.waitUntil(async () => (await pageText()).includes(needle), { timeout: 20_000, interval: 500, timeoutMsg: `"${needle}" never appeared after the crash` });
+  browser.waitUntil(async () => (await pageText()).includes(needle), { timeout: 20_000, interval: 500 })
+    .catch(() => { throw new Error(`"${needle}" never appeared after the crash; last DevTools error: ${lastError}`); });
 
 describe('Web view crash (§5, A12)', function () {
   // WebKitWebDriver cannot survive a web-process kill either; Linux crash recovery is on the manual checklist.
