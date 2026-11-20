@@ -248,6 +248,10 @@ describe('GitHub Actions runtime', () => {
         expect(NODE24[name], `${name} is not in the list`).toBeDefined();
         expect(Number(major), name).toBeGreaterThanOrEqual(NODE24[name]);
       }
+      // The app's own scripts need Node.js 22 or later: e2e/helpers.ts uses the built-in WebSocket (absent in Node.js 20).
+      const versions = [...text.matchAll(/node-version:\s*(\d+)/g)].map((m) => Number(m[1]));
+      expect(versions.length).toBeGreaterThan(0);
+      for (const v of versions) expect(v).toBeGreaterThanOrEqual(22);
     });
   }
 });
