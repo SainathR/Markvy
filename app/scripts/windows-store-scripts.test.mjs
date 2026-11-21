@@ -68,8 +68,20 @@ describe('Store MSI scripts', () => {
     expect(m).toContain('if ($Sign)');
     expect(m).toContain('-not $Force');
     expect(m).toContain('$conf.bundle.resources'); // the sample library ships as in the MSI
-    expect(m).toContain('[Parameter(Mandatory)][ValidatePattern(\'^CN=\')][string]$Publisher');
+    expect(m).toContain("[ValidatePattern('^CN=')][string]$Publisher");
     expect(m).not.toMatch(/Export-PfxCertificate/); // the test key never leaves the certificate store
+  });
+
+  it('pins the Partner Center identity and refuses a Store package that does not match it', () => {
+    const m = text('msix');
+    // Partner Center > Markvy > Product identity. The family name is the value Partner Center reported as expected.
+    expect(m).toContain("Name                 = 'SainathRacherla.Markvy'");
+    expect(m).toContain("Publisher            = 'CN=AABA4554-FFA3-4FD6-BCD6-9241B5386682'");
+    expect(m).toContain("PublisherDisplayName = 'Sainath Racherla'");
+    expect(m).toContain("FamilyName           = 'SainathRacherla.Markvy_2bytvpccj1m9w'");
+    expect(m).toContain("[string]$IdentityName = 'SainathRacherla.Markvy'"); // the defaults are the Store identity
+    expect(m).toContain('if (-not $Sign) {');
+    expect(m).toContain('Get-PackageFamilyName -Name $id.Name -Publisher $id.Publisher'); // checked again from the packed manifest
   });
 
   it('the workflow runs the scripts in this folder', () => {
@@ -90,10 +102,26 @@ describe.runIf(process.platform === 'win32' && shell)('Store MSI scripts on Wind
   });
 
   it('the MSIX packer rejects a missing markvy.exe with exit code 2 and writes nothing', () => {
-    const r = ps(files.msix, ['-IdentityName', 'Markvy', '-Publisher', 'CN=Test', '-PublisherDisplayName', 'Test', '-Exe', join(dir, 'missing.exe'), '-OutputDirectory', join(dir, 'msix')]);
+    const r = ps(files.msix, ['-Exe', join(dir, 'missing.exe'), '-OutputDirectory', join(dir, 'msix')]);
     expect(r.status).toBe(2);
     expect(r.stdout).toContain('markvy.exe not found');
     expect(existsSync(join(dir, 'msix'))).toBe(false);
+  });
+
+  it('the MSIX packer refuses a Store package with an identity Partner Center rejected, before building anything', () => {
+    // The identity of the first, rejected upload (2026-11-21).
+    const r = ps(files.msix, ['-IdentityName', 'Markvy', '-Publisher', 'CN=Sainath Racherla', '-Exe', join(dir, 'missing.exe'), '-OutputDirectory', join(dir, 'msix-wrong')]);
+    expect(r.status).toBe(1);
+    expect(r.stdout).toContain("identity name 'Markvy' (Partner Center: 'SainathRacherla.Markvy')");
+    expect(r.stdout).toContain("package family name 'Markvy_4w10n323msdkp' (Partner Center: 'SainathRacherla.Markvy_2bytvpccj1m9w')");
+    expect(existsSync(join(dir, 'msix-wrong'))).toBe(false);
+  });
+
+  it('derives package family names the way Windows does', () => {
+    const mod = join(repo, files.module).replace(/'/g, "''");
+    const r = spawnSync(shell, ['-NoProfile', '-Command', `Import-Module '${mod}'; Get-PackageFamilyName -Name 'SainathRacherla.Markvy' -Publisher 'CN=AABA4554-FFA3-4FD6-BCD6-9241B5386682'; Get-PackageFamilyName -Name 'Markvy' -Publisher 'CN=Sainath Racherla'`], { encoding: 'utf8' });
+    // The first is what Partner Center expects; the second is what Windows gave the test install of the rejected identity.
+    expect(r.stdout.trim().split(/\r?\n/)).toEqual(['SainathRacherla.Markvy_2bytvpccj1m9w', 'Markvy_4w10n323msdkp']);
   });
 
   it('the bundleware check saves a baseline and, with nothing installed in between, finds no Markvy entry', () => {

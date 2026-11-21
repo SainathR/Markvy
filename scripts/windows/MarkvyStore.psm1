@@ -133,5 +133,17 @@ function Get-FileSha256 {
     return (Get-FileHash -Path $Path -Algorithm SHA256).Hash.ToLowerInvariant()
 }
 
+# The package family name Windows derives from an MSIX identity: <Name>_<publisher id>. The publisher id is the first
+# 8 bytes of SHA-256 over the UTF-16LE publisher string, padded to 65 bits and written as 13 Crockford base32 digits.
+function Get-PackageFamilyName {
+    param([Parameter(Mandatory)][string]$Name, [Parameter(Mandatory)][string]$Publisher)
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $hash = $sha.ComputeHash([Text.Encoding]::Unicode.GetBytes($Publisher)) } finally { $sha.Dispose() }
+    $bits = (($hash[0..7] | ForEach-Object { [Convert]::ToString($_, 2).PadLeft(8, '0') }) -join '') + '0'
+    $digits = '0123456789abcdefghjkmnpqrstvwxyz'
+    $id = -join (0..12 | ForEach-Object { $digits[[Convert]::ToInt32($bits.Substring($_ * 5, 5), 2)] })
+    return "${Name}_$id"
+}
+
 Export-ModuleMember -Function Open-MsiDatabase, Close-MsiDatabase, Get-MsiRows, Get-MsiProperties, Get-MsiTemplate,
-    Test-IsElevated, Get-UninstallEntries, Get-SignatureReport, New-CheckResult, Get-FileSha256
+    Test-IsElevated, Get-UninstallEntries, Get-SignatureReport, New-CheckResult, Get-FileSha256, Get-PackageFamilyName
